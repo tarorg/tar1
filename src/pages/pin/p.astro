@@ -49,7 +49,7 @@ import '../../styles/global.css';
                         </td>
                     </tr>
                     <tr class="border-b border-gray-200">
-                        <td class="py-2 px-4 font-medium border-r border-gray-200">Type</td>
+                        <td class="py-2 px-4 font-medium border-r border-gray-200">Instance</td>
                         <td class="py-2 px-4 cursor-pointer" id="typeSelectorCell">
                             <div id="typeSelector" class="inline-block">Item</div>
                         </td>
@@ -305,6 +305,7 @@ import '../../styles/global.css';
         const bottomSheetSearch = document.getElementById('bottomSheetSearch');
         const typeInputs = document.querySelectorAll('.type-input');
         const typeValueInputs = document.querySelectorAll('.type-value-input');
+        const typeSelector = document.getElementById('typeSelector');
 
         let currentValues = [];
         let selectedValues = new Set();
@@ -324,8 +325,9 @@ import '../../styles/global.css';
         });
 
         function populateBottomSheet(values) {
+            const isItemType = typeSelector.textContent === 'Item';
             bottomSheetContent.innerHTML = values.map(value => 
-                `<div class="py-2 px-4 hover:bg-gray-100 cursor-pointer bottom-sheet-item ${selectedValues.has(value) ? 'bg-blue-100' : ''}">${value}</div>`
+                `<div class="py-2 px-4 hover:bg-gray-100 cursor-pointer bottom-sheet-item ${isItemType ? '' : (selectedValues.has(value) ? 'bg-blue-100' : '')}">${value}</div>`
             ).join('');
         }
 
@@ -337,7 +339,9 @@ import '../../styles/global.css';
 
         function closeBottomSheet() {
             bottomSheet.classList.add('translate-y-full');
-            selectedValues.clear(); // Clear selected values when closing
+            if (typeSelector.textContent !== 'Item') {
+                selectedValues.clear(); // Clear selected values when closing for non-Item types
+            }
             if (activeTypeValueInput) {
                 activeTypeValueInput.blur(); // Remove focus from the active input
             }
@@ -354,14 +358,23 @@ import '../../styles/global.css';
         bottomSheetContent.addEventListener('click', (e) => {
             if (e.target.classList.contains('bottom-sheet-item')) {
                 const value = e.target.textContent;
-                if (selectedValues.has(value)) {
-                    selectedValues.delete(value);
-                    e.target.classList.remove('bg-blue-100');
-                } else {
+                const isItemType = typeSelector.textContent === 'Item';
+
+                if (isItemType) {
+                    selectedValues.clear();
                     selectedValues.add(value);
-                    e.target.classList.add('bg-blue-100');
+                    updateTypeValueInput();
+                    closeBottomSheet();
+                } else {
+                    if (selectedValues.has(value)) {
+                        selectedValues.delete(value);
+                        e.target.classList.remove('bg-blue-100');
+                    } else {
+                        selectedValues.add(value);
+                        e.target.classList.add('bg-blue-100');
+                    }
+                    updateTypeValueInput();
                 }
-                updateTypeValueInput();
             }
         });
 
@@ -371,31 +384,17 @@ import '../../styles/global.css';
             }
         }
 
-        // Close bottom sheet when tapping outside
-        document.addEventListener('click', (e) => {
-            if (!bottomSheet.contains(e.target) && 
-                !Array.from(typeValueInputs).some(input => input.contains(e.target)) &&
-                !bottomSheet.classList.contains('translate-y-full')) {
-                closeBottomSheet();
-            }
-        });
-
-        // Prevent clicks inside the bottom sheet from closing it
-        bottomSheet.addEventListener('click', (e) => {
-            e.stopPropagation();
-        });
-
         // Type selector functionality
-        const typeSelector = document.getElementById('typeSelector');
-        const typeSelectorCell = document.getElementById('typeSelectorCell');
-        const typeOptions = ['Item', 'Variants', 'Service'];
-        let currentTypeIndex = 0;
+        typeSelector.addEventListener('click', () => {
+            const instances = ['Item', 'Variants', 'Service'];
+            const currentIndex = instances.indexOf(typeSelector.textContent);
+            const nextIndex = (currentIndex + 1) % instances.length;
+            typeSelector.textContent = instances[nextIndex];
+            console.log(`Selected Instance: ${instances[nextIndex]}`);
 
-        typeSelectorCell.addEventListener('click', () => {
-            currentTypeIndex = (currentTypeIndex + 1) % typeOptions.length;
-            typeSelector.textContent = typeOptions[currentTypeIndex];
-            console.log(`Selected Type: ${typeOptions[currentTypeIndex]}`);
-            // Here you can add code to save the changes, e.g., send to a server
+            // Clear selected values when changing instance
+            selectedValues.clear();
+            typeValueInputs.forEach(input => input.value = '');
         });
 
         // Options selector functionality
