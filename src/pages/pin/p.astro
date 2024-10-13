@@ -567,6 +567,8 @@ import '../../styles/global.css';
             const optionRows = document.querySelectorAll('.option-row');
             const optionsSelector = document.getElementById('optionsSelector');
             
+            let allInstances = []; // This will store all instances for searching
+
             function generateCombinations(options) {
                 return options.reduce((acc, option) => {
                     if (acc.length === 0) {
@@ -592,7 +594,6 @@ import '../../styles/global.css';
                     console.error("Instances table not found");
                     return;
                 }
-                instancesTable.innerHTML = ''; // Clear existing rows
 
                 const visibleOptionRows = Array.from(optionRows).slice(0, parseInt(optionsSelector.textContent));
                 console.log("Visible option rows:", visibleOptionRows.length);
@@ -618,24 +619,41 @@ import '../../styles/global.css';
 
                 const productName = document.getElementById('nameField').textContent || 'PROD';
 
-                combinations.forEach((combination, index) => {
-                    const newRow = document.createElement('tr');
+                allInstances = combinations.map((combination, index) => {
                     const { sku, fullForm } = generateSKU(productName, combination, index);
+                    return { sku, fullForm, qty: 0 };
+                });
+
+                renderInstances(allInstances);
+                console.log("Instances table updated with", allInstances.length, "rows");
+            }
+
+            function renderInstances(instances) {
+                instancesTable.innerHTML = ''; // Clear existing rows
+                instances.forEach((instance) => {
+                    const newRow = document.createElement('tr');
                     newRow.innerHTML = `
                         <td class="px-6 py-4 whitespace-nowrap w-3/4 border-r border-gray-200">
                             <div class="flex flex-col">
-                                <input type="text" class="w-full focus:outline-none font-medium" value="${sku}" readonly>
-                                <span class="text-xs text-gray-500 mt-1">${fullForm}</span>
+                                <input type="text" class="w-full focus:outline-none font-medium" value="${instance.sku}" readonly>
+                                <span class="text-xs text-gray-500 mt-1">${instance.fullForm}</span>
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap w-1/4">
-                            <input type="number" class="w-full focus:outline-none" value="0">
+                            <input type="number" class="w-full focus:outline-none" value="${instance.qty}">
                         </td>
                     `;
                     instancesTable.appendChild(newRow);
                 });
+            }
 
-                console.log("Instances table updated with", combinations.length, "rows");
+            function searchInstances(query) {
+                const lowercaseQuery = query.toLowerCase();
+                const filteredInstances = allInstances.filter(instance => 
+                    instance.sku.toLowerCase().includes(lowercaseQuery) ||
+                    instance.fullForm.toLowerCase().includes(lowercaseQuery)
+                );
+                renderInstances(filteredInstances);
             }
 
             // Update instances table when option values change
@@ -675,6 +693,11 @@ import '../../styles/global.css';
                     // ... (existing bottom sheet click handler code)
                     onBottomSheetSelectionChange();
                 }
+            });
+
+            const instanceSearch = document.getElementById('instanceSearch');
+            instanceSearch.addEventListener('input', (e) => {
+                searchInstances(e.target.value);
             });
         });
 
@@ -945,6 +968,9 @@ import '../../styles/global.css';
 
     <!-- Add the new Notion-like table here -->
     <div class="mt-8 max-w-4xl mx-auto p-4">
+        <div class="mb-4">
+            <input type="text" id="instanceSearch" class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Search instances...">
+        </div>
         <div class="bg-white rounded-lg shadow-sm overflow-hidden">
             <table class="w-full">
                 <thead>
@@ -992,6 +1018,14 @@ import '../../styles/global.css';
         #instancesTableBody th:first-child,
         #instancesTableBody td:first-child {
             border-right: 1px solid #e5e7eb;
+        }
+
+        #instanceSearch {
+            transition: all 0.3s ease;
+        }
+
+        #instanceSearch:focus {
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
         }
     </style>
 </body>
