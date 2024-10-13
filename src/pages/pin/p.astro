@@ -568,24 +568,25 @@ import '../../styles/global.css';
             const optionsSelector = document.getElementById('optionsSelector');
             
             function generateCombinations(options) {
-                if (options.length === 0) return [[]];
-                const firstOption = options[0];
-                const restOptions = options.slice(1);
-                const combinationsWithoutFirst = generateCombinations(restOptions);
-                const combinations = [];
-                for (const value of firstOption.values) {
-                    for (const combination of combinationsWithoutFirst) {
-                        combinations.push([value, ...combination]);
+                return options.reduce((acc, option) => {
+                    if (acc.length === 0) {
+                        return option.values.map(value => [value]);
                     }
-                }
-                return combinations;
+                    return acc.flatMap(combo => option.values.map(value => [...combo, value]));
+                }, []);
             }
 
             function updateInstancesTable() {
-                if (!instancesTable) return;
+                console.log("Updating instances table");
+                if (!instancesTable) {
+                    console.error("Instances table not found");
+                    return;
+                }
                 instancesTable.innerHTML = ''; // Clear existing rows
 
                 const visibleOptionRows = Array.from(optionRows).slice(0, parseInt(optionsSelector.textContent));
+                console.log("Visible option rows:", visibleOptionRows.length);
+
                 const options = visibleOptionRows
                     .map(row => {
                         const typeInput = row.querySelector('.type-input');
@@ -600,18 +601,17 @@ import '../../styles/global.css';
                     })
                     .filter(option => option !== null);
 
+                console.log("Parsed options:", options);
+
                 const combinations = generateCombinations(options);
+                console.log("Generated combinations:", combinations);
 
                 combinations.forEach((combination, index) => {
                     const newRow = document.createElement('tr');
                     const sku = `SKU-${index + 1}`;
-                    const variant = combination.join(' - ');
                     newRow.innerHTML = `
                         <td class="px-6 py-4 whitespace-nowrap w-3/4 border-r border-gray-200">
-                            <div class="flex flex-col">
-                                <input type="text" class="w-full focus:outline-none font-medium" value="${sku}" readonly>
-                                <input type="text" class="w-full focus:outline-none text-sm text-gray-500 mt-1" value="${variant}" readonly>
-                            </div>
+                            <input type="text" class="w-full focus:outline-none font-medium" value="${sku}" readonly>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap w-1/4">
                             <input type="number" class="w-full focus:outline-none" value="0">
@@ -619,13 +619,17 @@ import '../../styles/global.css';
                     `;
                     instancesTable.appendChild(newRow);
                 });
+
+                console.log("Instances table updated with", combinations.length, "rows");
             }
 
             // Update instances table when option values change
             optionRows.forEach(row => {
+                const typeInput = row.querySelector('.type-input');
                 const valueInput = row.querySelector('.type-value-input');
-                if (valueInput) {
-                    valueInput.addEventListener('input', updateInstancesTable);
+                if (typeInput && valueInput) {
+                    typeInput.addEventListener('change', updateInstancesTable);
+                    valueInput.addEventListener('change', updateInstancesTable);
                 }
             });
 
@@ -633,11 +637,30 @@ import '../../styles/global.css';
             const optionsDecrease = document.getElementById('optionsDecrease');
             const optionsIncrease = document.getElementById('optionsIncrease');
 
-            optionsDecrease.addEventListener('click', updateInstancesTable);
-            optionsIncrease.addEventListener('click', updateInstancesTable);
+            optionsDecrease?.addEventListener('click', updateInstancesTable);
+            optionsIncrease?.addEventListener('click', updateInstancesTable);
 
             // Initial update
             updateInstancesTable();
+
+            // Observe changes in the option rows
+            const observer = new MutationObserver(updateInstancesTable);
+            optionRows.forEach(row => {
+                observer.observe(row, { childList: true, subtree: true, attributes: true, characterData: true });
+            });
+
+            // Add this to update instances when bottom sheet selection changes
+            function onBottomSheetSelectionChange() {
+                updateInstancesTable();
+            }
+
+            // Call this function after updating values in the bottom sheet
+            bottomSheetContent.addEventListener('click', (e) => {
+                if (e.target.classList.contains('bottom-sheet-item')) {
+                    // ... (existing bottom sheet click handler code)
+                    onBottomSheetSelectionChange();
+                }
+            });
         });
     </script>
 
