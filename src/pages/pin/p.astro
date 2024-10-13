@@ -576,6 +576,16 @@ import '../../styles/global.css';
                 }, []);
             }
 
+            function generateSKU(productName, combination, index) {
+                const productPrefix = productName.replace(/\s+/g, '').toUpperCase().slice(0, 3);
+                const variantCode = combination.map(attr => attr.slice(0, 2).toUpperCase()).join('');
+                const paddedIndex = String(index + 1).padStart(3, '0');
+                return {
+                    sku: `${productPrefix}-${variantCode}-${paddedIndex}`,
+                    fullForm: `${productName} - ${combination.join(', ')} - ${index + 1}`
+                };
+            }
+
             function updateInstancesTable() {
                 console.log("Updating instances table");
                 if (!instancesTable) {
@@ -606,12 +616,17 @@ import '../../styles/global.css';
                 const combinations = generateCombinations(options);
                 console.log("Generated combinations:", combinations);
 
+                const productName = document.getElementById('nameField').textContent || 'PROD';
+
                 combinations.forEach((combination, index) => {
                     const newRow = document.createElement('tr');
-                    const sku = `SKU-${index + 1}`;
+                    const { sku, fullForm } = generateSKU(productName, combination, index);
                     newRow.innerHTML = `
                         <td class="px-6 py-4 whitespace-nowrap w-3/4 border-r border-gray-200">
-                            <input type="text" class="w-full focus:outline-none font-medium" value="${sku}" readonly>
+                            <div class="flex flex-col">
+                                <input type="text" class="w-full focus:outline-none font-medium" value="${sku}" readonly>
+                                <span class="text-xs text-gray-500 mt-1">${fullForm}</span>
+                            </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap w-1/4">
                             <input type="number" class="w-full focus:outline-none" value="0">
@@ -662,6 +677,11 @@ import '../../styles/global.css';
                 }
             });
         });
+
+        const nameField = document.getElementById('nameField');
+        if (nameField) {
+            nameField.addEventListener('input', updateInstancesTable);
+        }
     </script>
 
     <style>
