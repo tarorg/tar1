@@ -795,5 +795,99 @@ import '../../styles/global.css';
             border-bottom: none;
         }
     </style>
+
+    <!-- Add the new Notion-like table here -->
+    <div class="mt-8 max-w-4xl mx-auto p-4">
+        <h2 class="text-2xl font-bold mb-4">Instances</h2>
+        <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+            <table class="w-full">
+                <thead>
+                    <tr class="bg-gray-50">
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-3/4 border-r border-gray-200">SKU</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">QTY</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200" id="instancesTableBody">
+                    <!-- Rows will be added dynamically -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // ... (previous script content remains unchanged)
+
+        // Add new script for the instances table
+        document.addEventListener('DOMContentLoaded', () => {
+            const instancesTable = document.getElementById('instancesTableBody');
+            
+            // Function to add a new row
+            function addNewRow() {
+                if (!instancesTable) return;
+                const newRow = document.createElement('tr');
+                newRow.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap w-3/4 border-r border-gray-200">
+                        <div class="flex flex-col">
+                            <input type="text" class="w-full focus:outline-none font-medium" placeholder="Enter SKU">
+                            <input type="text" class="w-full focus:outline-none text-sm text-gray-500 mt-1" placeholder="Enter subtext">
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap w-1/4">
+                        <input type="number" class="w-full focus:outline-none" placeholder="">
+                    </td>
+                `;
+                instancesTable.appendChild(newRow);
+            }
+
+            // Add a new row when the last row is being edited
+            instancesTable?.addEventListener('input', (event) => {
+                const target = event.target as HTMLElement;
+                if (target.tagName === 'INPUT') {
+                    const row = target.closest('tr');
+                    if (row === instancesTable?.lastElementChild) {
+                        addNewRow();
+                    }
+                }
+            });
+
+            // Initialize with one empty row
+            addNewRow();
+        });
+    </script>
+
+    <style>
+        /* ... (previous styles remain unchanged) */
+
+        /* Add these new styles for the instances table */
+        #instancesTableBody td {
+            vertical-align: top;
+        }
+
+        #instancesTableBody input[type="text"],
+        #instancesTableBody input[type="number"] {
+            background-color: transparent;
+        }
+
+        #instancesTableBody input[type="text"]::placeholder {
+            color: #9CA3AF;
+        }
+
+        /* Ensure the table respects the column widths */
+        #instancesTableBody table {
+            table-layout: fixed;
+        }
+
+        #instancesTableBody th,
+        #instancesTableBody td {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Add a vertical divider between columns */
+        #instancesTableBody th:first-child,
+        #instancesTableBody td:first-child {
+            border-right: 1px solid #e5e7eb;
+        }
+    </style>
 </body>
 </html>
