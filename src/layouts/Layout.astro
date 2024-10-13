@@ -1,0 +1,27 @@
+---
+import '../styles/global.css'; // This should include Tailwind CSS
+
+export interface Props {
+	title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="generator" content={Astro.generator} />
+		<title>{title}</title>
+		<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+		<style is:global>
+			/* You can add any global styles here if needed */
+		</style>
+	</head>
+	<body>
+		<slot />
+	</body>
+</html>

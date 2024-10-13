@@ -1,0 +1,185 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import units from '../../data/units.json';
+
+const returnUrl = Astro.url.searchParams.get('returnUrl') || '/products/prod';
+---
+
+<Layout title="Select Unit">
+  <main>
+    <div class="header">
+      <h1>Select Unit</h1>
+    </div>
+    <div class="search-container">
+      <div class="search-bar">
+        <span class="material-icons">search</span>
+        <input type="text" id="unitSearchInput" placeholder="Search units" class="search-input">
+      </div>
+    </div>
+    <div class="unit-list">
+      {units.map((unitGroup) => (
+        <div class="unit-item">
+          <div class="unit-header">
+            <span class="unit-name">{unitGroup.name}</span>
+            <span class="material-icons expand-icon">expand_more</span>
+          </div>
+          <div class="subunit-list">
+            {unitGroup.units.map((unit) => (
+              <div class="subunit-item" data-unit={`${unitGroup.name} > ${unit}`}>
+                {unit}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </main>
+</Layout>
+
+<style>
+  main {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 1rem;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    font-weight: bold;
+  }
+
+  .search-container {
+    margin-bottom: 1rem;
+  }
+
+  .search-bar {
+    display: flex;
+    align-items: center;
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+  }
+
+  .search-input {
+    border: none;
+    background: transparent;
+    font-size: 1rem;
+    width: 100%;
+    margin-left: 0.5rem;
+    outline: none;
+  }
+
+  .unit-list {
+    background-color: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .unit-item {
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .unit-item:last-child {
+    border-bottom: none;
+  }
+
+  .unit-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    cursor: pointer;
+  }
+
+  .unit-name {
+    font-weight: 500;
+  }
+
+  .expand-icon {
+    transition: transform 0.3s ease;
+  }
+
+  .subunit-list {
+    display: none;
+    padding-left: 1rem;
+    flex-direction: column;
+  }
+
+  .subunit-item {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid #f0f0f0;
+    cursor: pointer;
+  }
+
+  .subunit-item:hover {
+    background-color: #f9f9f9;
+  }
+</style>
+
+<script define:vars={{ returnUrl }}>
+  document.addEventListener('DOMContentLoaded', () => {
+    const unitList = document.querySelector('.unit-list');
+    const unitSearchInput = document.getElementById('unitSearchInput');
+
+    function filterUnits(searchTerm) {
+      const items = unitList.querySelectorAll('.unit-item');
+      items.forEach((item) => {
+        const unitName = item.querySelector('.unit-name').textContent.toLowerCase();
+        const subunits = item.querySelectorAll('.subunit-item');
+        let hasVisibleSubunit = false;
+
+        subunits.forEach((subItem) => {
+          const subName = subItem.textContent.toLowerCase();
+          const showSubItem = subName.includes(searchTerm.toLowerCase());
+          subItem.style.display = showSubItem ? 'block' : 'none';
+          if (showSubItem) hasVisibleSubunit = true;
+        });
+
+        item.style.display = unitName.includes(searchTerm.toLowerCase()) || hasVisibleSubunit ? 'block' : 'none';
+      });
+    }
+
+    unitSearchInput.addEventListener('input', (e) => {
+      filterUnits(e.target.value.trim());
+    });
+
+    unitList.addEventListener('click', (e) => {
+      const unitHeader = e.target.closest('.unit-header');
+      const subunitItem = e.target.closest('.subunit-item');
+
+      if (unitHeader) {
+        const unitItem = unitHeader.closest('.unit-item');
+        const subunitList = unitItem.querySelector('.subunit-list');
+        const expandIcon = unitHeader.querySelector('.expand-icon');
+        
+        // Toggle the subunit list
+        if (subunitList.style.display === 'flex') {
+          subunitList.style.display = 'none';
+          expandIcon.style.transform = 'rotate(0deg)';
+        } else {
+          subunitList.style.display = 'flex';
+          expandIcon.style.transform = 'rotate(180deg)';
+        }
+      }
+
+      if (subunitItem) {
+        const selectedUnit = subunitItem.dataset.unit;
+        const urlParams = new URLSearchParams(window.location.search);
+        const returnUrl = urlParams.get('returnUrl') || '/products/prod';
+
+        // Append the selected unit to the return URL
+        const updatedReturnUrl = new URL(returnUrl, window.location.origin);
+        updatedReturnUrl.searchParams.set('unit', selectedUnit);
+
+        window.location.href = updatedReturnUrl.toString();
+      }
+    });
+  });
+</script>

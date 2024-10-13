@@ -1,0 +1,40 @@
+{
+  "attributes": [
+    {
+      "Type": "Color",
+      "values": ["Red", "Blue", "Green", "Yellow", "Black", "White", "Purple", "Orange", "Pink", "Brown"]
+    },
+    {
+      "Type": "Size",
+      "values": ["XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL", "5XL", "One Size"]
+    },
+    {
+      "Type": "Material",
+      "values": ["Cotton", "Polyester", "Wool", "Silk", "Linen", "Leather", "Denim", "Nylon", "Spandex", "Velvet"]
+    },
+    {
+      "Type": "Style",
+      "values": ["Casual", "Formal", "Sporty", "Bohemian", "Vintage", "Modern", "Classic", "Trendy", "Elegant", "Streetwear"]
+    },
+    {
+      "Type": "Pattern",
+      "values": ["Solid", "Striped", "Polka Dot", "Floral", "Plaid", "Checkered", "Geometric", "Animal Print", "Camouflage", "Abstract"]
+    },
+    {
+      "Type": "Sleeve Length",
+      "values": ["Short Sleeve", "Long Sleeve", "3/4 Sleeve", "Sleeveless", "Cap Sleeve", "Roll-up Sleeve", "Butterfly Sleeve", "Puff Sleeve", "Dolman Sleeve", "Batwing Sleeve"]
+    },
+    {
+      "Type": "Neckline",
+      "values": ["Crew Neck", "V-Neck", "Scoop Neck", "Turtleneck", "Cowl Neck", "Boat Neck", "Halter Neck", "Off-Shoulder", "Square Neck", "Sweetheart Neck"]
+    },
+    {
+      "Type": "Fit",
+      "values": ["Regular Fit", "Slim Fit", "Loose Fit", "Skinny Fit", "Relaxed Fit", "Tailored Fit", "Oversized", "Compression Fit", "Athletic Fit", "Boxy Fit"]
+    },
+    {
+      "Type": "Occasion",
+      "values": ["Everyday", "Work", "Party", "Wedding", "Beach", "Gym", "Travel", "Date Night", "Outdoor", "Lounge"]
+    }
+  ]
+}

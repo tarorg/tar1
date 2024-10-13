@@ -1,0 +1,42 @@
+[
+  {
+    "name": "Art & Collectibles",
+    "subcategories": ["Paintings", "Sculptures", "Photography", "Prints"]
+  },
+  {
+    "name": "Electronics",
+    "subcategories": ["Smartphones", "Laptops", "Tablets", "Accessories"]
+  },
+  {
+    "name": "Fashion",
+    "subcategories": ["Men's Clothing", "Women's Clothing", "Shoes", "Accessories"]
+  },
+  {
+    "name": "Home & Garden",
+    "subcategories": ["Furniture", "Decor", "Kitchen", "Outdoor"]
+  },
+  {
+    "name": "Books & Media",
+    "subcategories": ["Books", "Movies", "Music", "Magazines"]
+  },
+  {
+    "name": "Health & Beauty",
+    "subcategories": ["Skincare", "Makeup", "Hair Care", "Fragrances"]
+  },
+  {
+    "name": "Sports & Outdoors",
+    "subcategories": ["Fitness Equipment", "Camping Gear", "Team Sports", "Water Sports"]
+  },
+  {
+    "name": "Toys & Games",
+    "subcategories": ["Board Games", "Puzzles", "Action Figures", "Educational Toys"]
+  },
+  {
+    "name": "Food & Beverages",
+    "subcategories": ["Snacks", "Beverages", "Gourmet Foods", "Specialty Diets"]
+  },
+  {
+    "name": "Automotive",
+    "subcategories": ["Car Parts", "Accessories", "Tools", "Car Care"]
+  }
+]

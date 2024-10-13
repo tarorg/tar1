@@ -1,0 +1,190 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import categories from '../../data/categories.json';
+
+const returnUrl = Astro.url.searchParams.get('returnUrl') || '/products/prod';
+---
+
+<Layout title="Select Category">
+  <main>
+    <div class="header">
+      <h1>Select Category</h1>
+    </div>
+    <div class="search-container">
+      <div class="search-bar">
+        <span class="material-icons">search</span>
+        <input type="text" id="categorySearchInput" placeholder="Search categories" class="search-input">
+      </div>
+    </div>
+    <div class="category-list">
+      {categories.map((category) => (
+        <div class="category-item">
+          <div class="category-header">
+            <span class="category-name">{category.name}</span>
+            <span class="material-icons expand-icon">expand_more</span>
+          </div>
+          <div class="subcategory-list">
+            {category.subcategories.map((subcategory) => (
+              <div class="subcategory-item" data-category={`${category.name} > ${subcategory}`}>
+                {subcategory}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </main>
+</Layout>
+
+<style>
+  main {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 1rem;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    font-weight: bold;
+  }
+
+  .search-container {
+    margin-bottom: 1rem;
+  }
+
+  .search-bar {
+    display: flex;
+    align-items: center;
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+  }
+
+  .search-input {
+    border: none;
+    background: transparent;
+    font-size: 1rem;
+    width: 100%;
+    margin-left: 0.5rem;
+    outline: none;
+  }
+
+  .category-list {
+    background-color: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .category-item {
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .category-item:last-child {
+    border-bottom: none;
+  }
+
+  .category-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    cursor: pointer;
+  }
+
+  .category-name {
+    font-weight: 500;
+  }
+
+  .expand-icon {
+    transition: transform 0.3s ease;
+  }
+
+  .subcategory-list {
+    display: none;
+    padding-left: 1rem;
+    flex-direction: column;
+  }
+
+  .subcategory-item {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid #f0f0f0;
+    cursor: pointer;
+  }
+
+  .subcategory-item:hover {
+    background-color: #f9f9f9;
+  }
+</style>
+
+<script define:vars={{ returnUrl }}>
+  document.addEventListener('DOMContentLoaded', () => {
+    const categoryList = document.querySelector('.category-list');
+    const categorySearchInput = document.getElementById('categorySearchInput');
+
+    function filterCategories(searchTerm) {
+      const items = categoryList.querySelectorAll('.category-item');
+      items.forEach((item) => {
+        const categoryName = item.querySelector('.category-name').textContent.toLowerCase();
+        const subcategories = item.querySelectorAll('.subcategory-item');
+        let hasVisibleSubcategory = false;
+
+        subcategories.forEach((subItem) => {
+          const subName = subItem.textContent.toLowerCase();
+          const showSubItem = subName.includes(searchTerm.toLowerCase());
+          subItem.style.display = showSubItem ? 'block' : 'none';
+          if (showSubItem) hasVisibleSubcategory = true;
+        });
+
+        item.style.display = categoryName.includes(searchTerm.toLowerCase()) || hasVisibleSubcategory ? 'block' : 'none';
+      });
+    }
+
+    categorySearchInput.addEventListener('input', (e) => {
+      filterCategories(e.target.value.trim());
+    });
+
+    categoryList.addEventListener('click', (e) => {
+      const categoryHeader = e.target.closest('.category-header');
+      const subcategoryItem = e.target.closest('.subcategory-item');
+
+      if (categoryHeader) {
+        const categoryItem = categoryHeader.closest('.category-item');
+        const subcategoryList = categoryItem.querySelector('.subcategory-list');
+        const expandIcon = categoryHeader.querySelector('.expand-icon');
+        
+        // Toggle the subcategory list
+        if (subcategoryList.style.display === 'flex') {
+          subcategoryList.style.display = 'none';
+          expandIcon.style.transform = 'rotate(0deg)';
+        } else {
+          subcategoryList.style.display = 'flex';
+          expandIcon.style.transform = 'rotate(180deg)';
+        }
+      }
+
+      if (subcategoryItem) {
+        const selectedCategory = subcategoryItem.dataset.category;
+        const urlParams = new URLSearchParams(window.location.search);
+        const returnUrl = urlParams.get('returnUrl') || '/products/product';
+
+        // Update currentProduct in localStorage
+        const currentProduct = JSON.parse(localStorage.getItem('currentProduct') || '{}');
+        currentProduct.Category = selectedCategory;
+        localStorage.setItem('currentProduct', JSON.stringify(currentProduct));
+
+        // Append the selected category to the return URL
+        const updatedReturnUrl = new URL(returnUrl, window.location.origin);
+        updatedReturnUrl.searchParams.set('selectedCategory', selectedCategory);
+
+        window.location.href = updatedReturnUrl.toString();
+      }
+    });
+  });
+</script>

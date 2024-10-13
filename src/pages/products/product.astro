@@ -1,0 +1,506 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import categories from '../../data/categories.json';
+
+const productId = Astro.url.searchParams.get('id');
+const selectedCategory = Astro.url.searchParams.get('selectedCategory');
+let existingProduct = null;
+
+const productCore = {
+  "Name": "",
+  "Medias": "",
+  "Type": "Item",
+  "Category": selectedCategory || "",
+  "Notes": "",
+  "Attributes": {} // Add Attributes to the core structure
+};
+
+const productInstances = [];
+---
+
+<Layout title="Product">
+  <main style="width: 100%; padding: 1rem 20px;">
+    <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 1rem;">
+      <button id="closeButton" class="icon-button" aria-label="Close">
+        <span class="material-icons">close</span>
+      </button>
+      <button id="submitButton" class="icon-button" aria-label="Submit">
+        <span class="material-icons">check</span>
+      </button>
+    </div>
+
+    <!-- Core Table -->
+    <div class="table-container">
+      <h2 class="table-title">Core</h2>
+      <table id="coreTable" class="data-table">
+        <tbody>
+          {Object.entries(productCore).map(([key, value], index) => (
+            <tr class={index === 0 ? "first-row" : ""}>
+              <td class="key-cell">{key}</td>
+              {key === "Medias" ? (
+                <td class="value-cell" data-key={key}>
+                  <div id="mediaGrid" class="media-grid">
+                    <!-- Media thumbnails will be inserted here by JavaScript -->
+                  </div>
+                </td>
+              ) : key === "Type" ? (
+                <td class="value-cell type-cell" data-key={key}>
+                  <span id="typeValue">Item</span>
+                  <span class="material-icons">chevron_right</span>
+                </td>
+              ) : key === "Category" ? (
+                <td class="value-cell" data-key={key}>{value}</td>
+              ) : key === "Attributes" ? (
+                <td class="value-cell" data-key={key}>
+                  <!-- Attributes will be inserted here by JavaScript -->
+                </td>
+              ) : (
+                <td class="value-cell" contenteditable="true" data-key={key}>{value}</td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Instances Table -->
+    <div class="table-container">
+      <h2 class="table-title" id="instancesTitle">Instances</h2>
+      <table id="instancesTable" class="data-table">
+        <tbody>
+          <!-- Instance rows will be inserted here by JavaScript -->
+        </tbody>
+      </table>
+    </div>
+  </main>
+</Layout>
+
+<style>
+  .table-container {
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+    overflow: hidden;
+  }
+
+  .table-title {
+    font-size: 18px;
+    font-weight: bold;
+    padding: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    cursor: pointer;
+    margin-bottom: 0;
+    background-color: #f9f9f9; /* Very light grey-white background */
+  }
+
+  .table-title:hover {
+    background-color: #f5f5f5; /* Slightly darker on hover for feedback */
+  }
+
+  .data-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .data-table tr {
+    position: relative;
+    height: 48px; /* Set a consistent height for all rows */
+  }
+
+  .data-table tr::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background-color: #e5e7eb;
+  }
+
+  .data-table tr:last-child::after {
+    display: none;
+  }
+
+  .data-table tr.first-row td {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .key-cell, .value-cell {
+    padding: 0.75rem 1rem;
+    position: relative;
+    vertical-align: middle; /* Align content vertically */
+  }
+
+  .key-cell {
+    font-weight: 500;
+    width: 30%;
+    border-right: 1px solid #e5e7eb;
+  }
+
+  .value-cell {
+    width: 70%;
+  }
+
+  .type-cell {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+  }
+
+  .media-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .cell-highlight {
+    background-color: #f5f5f5;
+    outline: none;
+  }
+
+  [contenteditable="true"]:focus {
+    background-color: #f5f5f5;
+    outline: none;
+    box-shadow: none;
+  }
+
+  .icon-button {
+    background-color: white;
+    border: 1px solid #e0e0e0;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 5px;
+    transition: background-color 0.2s, border-color 0.2s;
+    margin-left: 8px;
+  }
+
+  .icon-button:hover {
+    background-color: #f5f5f5;
+    border-color: #d0d0d0;
+  }
+
+  .icon-button:active {
+    background-color: #e8e8e8;
+    border-color: #c0c0c0;
+  }
+
+  .icon-button .material-icons {
+    font-size: 24px;
+    color: #1D192B;
+  }
+
+  .thumbnail {
+    width: auto;
+    height: 20px;
+    object-fit: cover;
+    border-radius: 2px;
+    flex-shrink: 0;
+    border: 1px solid #e0e0e0;
+  }
+
+  main {
+    max-width: none;
+    margin: 0;
+  }
+
+  .attribute-group {
+    margin-bottom: 0.5rem;
+  }
+
+  .attribute-group strong {
+    font-weight: 500;
+  }
+</style>
+
+<script define:vars={{ categories, productId, selectedCategory }}>
+  document.addEventListener('DOMContentLoaded', async () => {
+    const coreTable = document.getElementById('coreTable');
+    const instancesTable = document.getElementById('instancesTable');
+    const submitButton = document.getElementById('submitButton');
+    const closeButton = document.getElementById('closeButton');
+    const typeValue = document.getElementById('typeValue');
+    const mediaGrid = document.getElementById('mediaGrid');
+    const instancesTitle = document.getElementById('instancesTitle');
+
+    const typeOptions = ['Item', 'Variants', 'Service'];
+    let currentTypeIndex = 0;
+
+    // Load current product from local storage
+    let currentProduct = JSON.parse(localStorage.getItem('currentProduct')) || {};
+
+    // Initialize currentProduct if it doesn't exist
+    if (!currentProduct || typeof currentProduct !== 'object') {
+      currentProduct = {
+        Name: "",
+        Medias: "",
+        Type: "Item",
+        Category: "",
+        Notes: "",
+        Attributes: {}
+      };
+    }
+
+    // Function to update core table with current product data
+    function updateCoreTable() {
+      coreTable.querySelectorAll('td[data-key]').forEach(cell => {
+        const key = cell.dataset.key;
+        if (key === 'Medias') {
+          // Clear existing media
+          mediaGrid.innerHTML = '';
+          if (currentProduct[key] && typeof currentProduct[key] === 'string') {
+            currentProduct[key].split(',').forEach(mediaUrl => {
+              addMediaThumbnail(mediaUrl.trim());
+            });
+          } else if (Array.isArray(currentProduct[key])) {
+            currentProduct[key].forEach(mediaUrl => {
+              addMediaThumbnail(mediaUrl.trim());
+            });
+          }
+        } else if (key === 'Type') {
+          typeValue.textContent = currentProduct[key] || 'Item';
+          currentTypeIndex = typeOptions.indexOf(currentProduct[key] || 'Item');
+        } else if (key === 'Attributes') {
+          updateAttributesInCoreTable(currentProduct[key] || {});
+        } else {
+          // This will handle Category, Notes, and any other fields
+          cell.textContent = currentProduct[key] || '';
+        }
+      });
+    }
+
+    // Function to update attributes in the core table
+    function updateAttributesInCoreTable(attributes) {
+      const attributesCell = coreTable.querySelector('td[data-key="Attributes"]');
+      if (attributesCell) {
+        attributesCell.innerHTML = '';
+        Object.entries(attributes).forEach(([group, values]) => {
+          const groupDiv = document.createElement('div');
+          groupDiv.className = 'attribute-group';
+          groupDiv.innerHTML = `
+            <strong>${group}:</strong> ${Array.isArray(values) ? values.join(', ') : values}
+          `;
+          attributesCell.appendChild(groupDiv);
+        });
+      }
+    }
+
+    // Function to add media thumbnail
+    function addMediaThumbnail(mediaUrl) {
+      const thumbnail = document.createElement('img');
+      thumbnail.src = mediaUrl;
+      thumbnail.alt = 'Media thumbnail';
+      thumbnail.className = 'thumbnail';
+      mediaGrid.appendChild(thumbnail);
+    }
+
+    // Load existing data from IndexedDB
+    const existingData = await loadFromIndexedDB();
+    
+    // Update currentProduct with existing data
+    if (existingData.core) {
+      Object.assign(currentProduct, existingData.core);
+    }
+
+    // Check URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlSelectedCategory = urlParams.get('selectedCategory');
+    const selectedAttributesParam = urlParams.get('selectedAttributes');
+
+    // Update currentProduct with URL parameters if present
+    if (urlSelectedCategory) {
+      currentProduct.Category = urlSelectedCategory;
+    }
+
+    if (selectedAttributesParam) {
+      try {
+        const attributes = JSON.parse(decodeURIComponent(selectedAttributesParam));
+        currentProduct.Attributes = attributes;
+      } catch (error) {
+        console.error("Error parsing selectedAttributes:", error);
+      }
+    }
+
+    // Update the core table with the latest data
+    updateCoreTable();
+
+    // Save the updated currentProduct to localStorage
+    localStorage.setItem('currentProduct', JSON.stringify(currentProduct));
+
+    // Clean up URL parameters
+    urlParams.delete('selectedCategory');
+    urlParams.delete('selectedAttributes');
+    const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
+    window.history.replaceState({}, '', newUrl);
+
+    // Handle core table interactions
+    if (coreTable) {
+      coreTable.addEventListener('click', (e) => {
+        const cell = e.target.closest('td[data-key]');
+        if (cell) {
+          const key = cell.dataset.key;
+          if (key === 'Medias') {
+            window.location.href = '/upload?returnUrl=' + encodeURIComponent(window.location.href);
+          } else if (key === 'Category') {
+            window.location.href = '/products/selectcategory?returnUrl=' + encodeURIComponent(window.location.href);
+          } else if (key === 'Type') {
+            currentTypeIndex = (currentTypeIndex + 1) % typeOptions.length;
+            typeValue.textContent = typeOptions[currentTypeIndex];
+            currentProduct[key] = typeOptions[currentTypeIndex];
+            localStorage.setItem('currentProduct', JSON.stringify(currentProduct));
+          } else if (key === 'Attributes') {
+            window.location.href = '/products/attributes?returnUrl=' + encodeURIComponent(window.location.href);
+          }
+        }
+      });
+
+      coreTable.addEventListener('input', (e) => {
+        const cell = e.target.closest('td[data-key]');
+        if (cell) {
+          const key = cell.dataset.key;
+          currentProduct[key] = cell.textContent;
+          localStorage.setItem('currentProduct', JSON.stringify(currentProduct));
+        }
+      });
+    }
+
+    // Handle adding instances
+    instancesTitle.addEventListener('click', () => {
+      window.location.href = '/products/instance?returnUrl=' + encodeURIComponent(window.location.href);
+    });
+
+    // Check for new instance
+    const newInstance = urlParams.get('newInstance');
+    if (newInstance) {
+      const instance = JSON.parse(newInstance);
+      const row = document.createElement('tr');
+      row.className = instancesTable.querySelector('tbody').children.length === 0 ? 'first-row' : '';
+      row.innerHTML = `
+        <td class="key-cell">${instance.type}</td>
+        <td class="value-cell" contenteditable="true">${instance.value}</td>
+      `;
+      instancesTable.querySelector('tbody').appendChild(row);
+      urlParams.delete('newInstance');
+      const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
+      window.history.replaceState({}, '', newUrl);
+    }
+
+    // Function to save data to IndexedDB
+    async function saveToIndexedDB(coreData) {
+      const dbName = 'productDB';
+      const dbVersion = 1;
+
+      const request = indexedDB.open(dbName, dbVersion);
+
+      request.onerror = (event) => {
+        console.error("IndexedDB error:", event.target.error);
+      };
+
+      request.onsuccess = (event) => {
+        const db = event.target.result;
+        const transaction = db.transaction(['core'], 'readwrite');
+
+        const coreStore = transaction.objectStore('core');
+
+        // Remove the lowercase 'attributes' property if it exists
+        if ('attributes' in coreData) {
+          delete coreData.attributes;
+        }
+
+        // Save core data (including Attributes with uppercase 'A')
+        coreStore.put(coreData);
+
+        transaction.oncomplete = () => {
+          console.log("Data saved successfully");
+          // Redirect to product list or show success message
+          window.location.href = '/products/allproducts';
+        };
+
+        transaction.onerror = (event) => {
+          console.error("Transaction error:", event.target.error);
+        };
+      };
+
+      request.onupgradeneeded = (event) => {
+        const db = event.target.result;
+        db.createObjectStore('core', { keyPath: 'id', autoIncrement: true });
+      };
+    }
+
+    // Function to load data from IndexedDB
+    async function loadFromIndexedDB() {
+      return new Promise((resolve, reject) => {
+        const dbName = 'productDB';
+        const dbVersion = 1;
+
+        const request = indexedDB.open(dbName, dbVersion);
+
+        request.onerror = (event) => {
+          console.error("IndexedDB error:", event.target.error);
+          reject(event.target.error);
+        };
+
+        request.onsuccess = (event) => {
+          const db = event.target.result;
+          const transaction = db.transaction(['core'], 'readonly');
+
+          const coreStore = transaction.objectStore('core');
+
+          const data = {
+            core: null
+          };
+
+          coreStore.getAll().onsuccess = (event) => {
+            data.core = event.target.result[0] || {};
+          };
+
+          transaction.oncomplete = () => {
+            resolve(data);
+          };
+        };
+      });
+    }
+
+    if (submitButton) {
+      submitButton.addEventListener('click', () => {
+        // Collect data from core table
+        const coreData = {};
+        coreTable.querySelectorAll('td[data-key]').forEach(cell => {
+          const key = cell.dataset.key;
+          if (key === 'Medias') {
+            coreData[key] = Array.from(cell.querySelectorAll('.thumbnail')).map(img => img.src).join(', ');
+          } else if (key === 'Type') {
+            coreData[key] = typeValue.textContent;
+          } else if (key === 'Attributes') {
+            coreData[key] = currentProduct.Attributes || {};
+          } else {
+            coreData[key] = cell.textContent;
+          }
+        });
+
+        // Remove lowercase 'attributes' if it exists
+        if ('attributes' in coreData) {
+          delete coreData.attributes;
+        }
+
+        // Save data to IndexedDB
+        saveToIndexedDB(coreData);
+
+        // Clear currentProduct from local storage
+        localStorage.removeItem('currentProduct');
+      });
+    }
+
+    if (closeButton) {
+      closeButton.addEventListener('click', () => {
+        // Clear currentProduct from local storage
+        localStorage.removeItem('currentProduct');
+        window.location.href = '/products/allproducts';
+      });
+    }
+  });
+</script>

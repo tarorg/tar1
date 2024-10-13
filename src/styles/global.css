@@ -1,0 +1,43 @@
+/* Import Roboto font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
+/* Tailwind directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Apply Roboto to the entire document */
+@layer base {
+  :root {
+    font-family: 'Roboto', sans-serif;
+  }
+
+  body {
+    @apply m-0 p-0;
+  }
+}
+
+/* Material Design 3 typography styles */
+@layer components {
+  .display-large { @apply text-[57px] leading-[64px] font-normal; }
+  .display-medium { @apply text-[45px] leading-[52px] font-normal; }
+  .display-small { @apply text-[36px] leading-[44px] font-normal; }
+
+  .headline-large { @apply text-[32px] leading-[40px] font-normal; }
+  .headline-medium { @apply text-[28px] leading-[36px] font-normal; }
+  .headline-small { @apply text-[24px] leading-[32px] font-normal; }
+
+  .title-large { @apply text-[22px] leading-[28px] font-normal; }
+  .title-medium { @apply text-[16px] leading-[24px] font-medium; }
+  .title-small { @apply text-[14px] leading-[20px] font-medium; }
+
+  .label-large { @apply text-[14px] leading-[20px] font-medium; }
+  .label-medium { @apply text-[12px] leading-[16px] font-medium; }
+  .label-small { @apply text-[11px] leading-[16px] font-medium; }
+
+  .body-large { @apply text-[16px] leading-[24px] font-normal; }
+  .body-medium { @apply text-[14px] leading-[20px] font-normal; }
+  .body-small { @apply text-[12px] leading-[16px] font-normal; }
+}
+
+/* You can add any additional global styles here if needed */

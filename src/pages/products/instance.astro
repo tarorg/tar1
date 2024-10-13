@@ -1,0 +1,181 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+const returnUrl = Astro.url.searchParams.get('returnUrl') || '/products/product';
+
+const instanceFields = {
+  "SKU": "",
+  "Barcode": "",
+  "Name": "",
+  "Images": "",
+  "Qty": "",
+  "OP1": "",
+  "Reorder": "",
+  "Cost": "",
+  "Selling": "",
+  "Compare": "",
+  "Location": ""
+};
+---
+
+<Layout title="Add Instance">
+  <main>
+    <div class="header">
+      <button id="cancelButton" class="icon-button" aria-label="Cancel">
+        <span class="material-icons">close</span>
+      </button>
+      <button id="addButton" class="icon-button" aria-label="Add">
+        <span class="material-icons">check</span>
+      </button>
+    </div>
+
+    <div class="table-container">
+      <table id="instanceTable" class="data-table">
+        <tbody>
+          {Object.entries(instanceFields).map(([key, value], index) => (
+            <tr class={index === 0 ? "first-row" : ""}>
+              <td class="key-cell">{key}</td>
+              <td class="value-cell" contenteditable="true" data-key={key}></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </main>
+</Layout>
+
+<style>
+  main {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100%;
+    padding: 1rem;
+    box-sizing: border-box;
+  }
+
+  .header {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1rem;
+  }
+
+  .table-container {
+    flex-grow: 1;
+    overflow-y: auto;
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  }
+
+  .data-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .data-table tr {
+    position: relative;
+    height: 48px;
+  }
+
+  .data-table tr::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background-color: #e5e7eb;
+  }
+
+  .data-table tr:last-child::after {
+    display: none;
+  }
+
+  .data-table tr.first-row td {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .key-cell, .value-cell {
+    padding: 0.75rem 1rem;
+    position: relative;
+    vertical-align: middle;
+  }
+
+  .key-cell {
+    font-weight: 500;
+    width: 30%;
+    border-right: 1px solid #e5e7eb;
+  }
+
+  .value-cell {
+    width: 70%;
+  }
+
+  [contenteditable="true"]:focus {
+    outline: none;
+    background-color: #f5f5f5;
+  }
+
+  .icon-button {
+    background-color: white;
+    border: 1px solid #e0e0e0;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 5px;
+    transition: background-color 0.2s, border-color 0.2s;
+    margin-left: 8px;
+  }
+
+  .icon-button:hover {
+    background-color: #f5f5f5;
+    border-color: #d0d0d0;
+  }
+
+  .icon-button:active {
+    background-color: #e8e8e8;
+    border-color: #c0c0c0;
+  }
+
+  .icon-button .material-icons {
+    font-size: 24px;
+    color: #1D192B;
+  }
+</style>
+
+<script define:vars={{ returnUrl }}>
+  document.addEventListener('DOMContentLoaded', () => {
+    const cancelButton = document.getElementById('cancelButton');
+    const addButton = document.getElementById('addButton');
+
+    cancelButton.addEventListener('click', () => {
+      window.location.href = returnUrl;
+    });
+
+    addButton.addEventListener('click', () => {
+      const instanceData = {};
+      let isValid = true;
+
+      document.querySelectorAll('.value-cell').forEach(cell => {
+        const key = cell.dataset.key;
+        const value = cell.textContent.trim();
+        if (value) {
+          instanceData[key] = value;
+        } else {
+          isValid = false;
+        }
+      });
+
+      if (isValid) {
+        const updatedReturnUrl = new URL(returnUrl, window.location.origin);
+        updatedReturnUrl.searchParams.set('newInstance', JSON.stringify(instanceData));
+
+        window.location.href = updatedReturnUrl.toString();
+      } else {
+        alert('Please fill in all fields.');
+      }
+    });
+  });
+</script>

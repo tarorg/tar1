@@ -1,0 +1,27 @@
+.custom-select__control {
+  transition: all 0.2s ease;
+}
+
+.custom-select__control:hover {
+  background-color: rgba(55, 53, 47, 0.08) !important;
+}
+
+.custom-select__menu {
+  box-shadow: rgba(15, 15, 15, 0.05) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 3px 6px, rgba(15, 15, 15, 0.2) 0px 9px 24px !important;
+  border-radius: 4px !important;
+}
+
+.custom-select__option {
+  cursor: pointer;
+  padding: 8px 12px !important;
+}
+
+.custom-select__option--is-focused {
+  background-color: rgba(55, 53, 47, 0.08) !important;
+}
+
+.custom-select__option--is-selected {
+  background-color: rgba(55, 53, 47, 0.16) !important;
+  color: inherit !important;
+  font-weight: 500;
+}

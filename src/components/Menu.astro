@@ -1,0 +1,122 @@
+---
+// Import the SVG icons
+import TriangleIcon from '../assets/triangle-icon.svg?raw';
+import SquareIcon from '../assets/square-icon.svg?raw';
+import CircleIcon from '../assets/circle-icon.svg?raw';
+import MenuList from './menulist.astro';
+
+// Get the current page title
+const currentPath = Astro.url.pathname;
+let pageTitle = "Menu"; // Default title
+
+const pageTitles: {[key: string]: string} = {
+  "/": "tar",
+  "/orai": "orai",
+  "/a": "a",
+  "/pin": "pin",
+  "/products/allproducts": "products", // Update this line
+  "/reports": "reports",
+  "/files": "files",
+  "/posts": "posts",
+  "/pathai": "pathai",
+  "/settings": "settings",
+  "/links": "links"
+};
+
+pageTitle = pageTitles[currentPath] || pageTitle;
+---
+
+<nav class="menu">
+  <div class="primary-container">
+    <h2>{pageTitle}</h2>
+  </div>
+  <div class="secondary-container">
+    <a href="/orai" class="icon-link" aria-label="Orai">
+      <span class="icon" set:html={TriangleIcon} />
+    </a>
+    <a href="/" class="icon-link" aria-label="Tar AI">
+      <span class="icon" set:html={SquareIcon} />
+    </a>
+    <a href="/a" class="icon-link" aria-label="A">
+      <span class="icon" set:html={CircleIcon} />
+    </a>
+  </div>
+</nav>
+
+<div id="menuListContainer" class="menu-list-container">
+  <MenuList />
+</div>
+
+<style>
+  .menu {
+    width: 100%;
+    background-color: #ffffff;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #333333;
+  }
+
+  .primary-container {
+    cursor: pointer;
+  }
+
+  .primary-container h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .secondary-container {
+    display: flex;
+    gap: 1rem;
+    padding-right: 20px;
+  }
+
+  .icon-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: #333333;
+  }
+
+  .icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .icon svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .menu-list-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #f0ece6;
+    z-index: 1000;
+    display: none;
+  }
+</style>
+
+<script>
+  const primaryContainer = document.querySelector('.primary-container');
+  const menuListContainer = document.getElementById('menuListContainer');
+
+  if (primaryContainer && menuListContainer) {
+    primaryContainer.addEventListener('click', () => {
+      menuListContainer.style.display = 'block';
+    });
+
+    menuListContainer.addEventListener('click', (event) => {
+      if (event.target === menuListContainer) {
+        menuListContainer.style.display = 'none';
+      }
+    });
+  }
+</script>

@@ -1,0 +1,1211 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Menu from '../../components/Menu.astro';
+import categories from '../../data/categories.json';
+
+const productId = Astro.url.searchParams.get('id');
+let existingProduct = null;
+
+const productCore = {
+  "Name": "",
+  "Medias": "",
+  "Type": "Item",
+  "Category": "",
+  "Notes": ""
+};
+
+const variantAttributes = {
+  color: "Red, Yellow, Green, Black",
+  size: "Small, Medium, Large",
+  weight: "250g",
+  pattern: "Solid"
+};
+
+const productInstances = [
+  { sku: "SKU001", name: "Wireless Bluetooth Headphones", qty: 50 },
+  { sku: "SKU002", name: "Smart Fitness Tracker", qty: 30 },
+  { sku: "SKU003", name: "Portable Power Bank", qty: 100 },
+  { sku: "SKU004", name: "Wireless Charging Pad", qty: 75 },
+  { sku: "SKU005", name: "Noise-Canceling Earbuds", qty: 25 },
+];
+---
+
+<Layout title="Product">
+  <Menu />
+  <main style="max-width: 1200px; margin: 0 auto; padding: 1rem 20px;"> <!-- Changed padding -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <h1 style="font-size: 20px; font-weight: bold;">{productId ? 'Edit Product' : 'Product'}</h1>
+      <button id="submitButton" class="button-tonal" style="border-radius: 5px;">Submit</button>
+    </div>
+    <div style="background-color: white; border-radius: 0.5rem; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); margin-bottom: 2rem; overflow: hidden;">
+      <table id="coreTable" style="width: 100%; border-collapse: collapse;">
+        <!-- Removed thead section -->
+        <tbody>
+          {Object.entries(productCore).map(([key, value], index) => (
+            <tr style={index !== Object.entries(productCore).length - 1 ? "border-bottom: 1px solid #e5e7eb;" : ""}>
+              <td style={`padding: 0.75rem 1rem; font-weight: 500; ${key === "Medias" || key === "Type" ? "cursor: pointer;" : ""}`} data-key={key}>{key}</td>
+              {key === "Medias" ? (
+                <td style="padding: 0.75rem 1rem; border-left: 1px solid #e5e7eb;" 
+                    data-key={key}>
+                  <div id="mediaGrid" style="display: flex; flex-wrap: wrap; gap: 4px;">
+                    <!-- Media thumbnails will be inserted here by JavaScript -->
+                  </div>
+                </td>
+              ) : key === "Type" ? (
+                <td style="padding: 0.75rem 1rem; border-left: 1px solid #e5e7eb;" 
+                    data-key={key}></td>
+              ) : (
+                <td style="padding: 0.75rem 1rem; border-left: 1px solid #e5e7eb;" 
+                    contenteditable="true" 
+                    data-key={key}></td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    <div id="variantSection" style="display: none;">
+      <h2 style="font-size: 20px; font-weight: bold; margin-bottom: 1rem;">variant</h2>
+      <div style="background-color: white; border-radius: 0.5rem; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); margin-bottom: 2rem; overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="border-bottom: 1px solid #e5e7eb;">
+              <th style="padding: 0.75rem 1rem; text-align: left; font-weight: 600;">Attribute</th>
+              <th style="padding: 0.75rem 1rem; text-align: left; font-weight: 600; border-left: 1px solid #e5e7eb;">Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Object.entries(variantAttributes).map(([key, value], index) => (
+              <tr style={index !== Object.entries(variantAttributes).length - 1 ? "border-bottom: 1px solid #e5e7eb;" : ""}>
+                <td style="padding: 0.75rem 1rem; font-weight: 500;">{key.charAt(0).toUpperCase() + key.slice(1)}</td>
+                <td style="padding: 0.75rem 1rem; border-left: 1px solid #e5e7eb;">{value}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="instancesSection" style="display: none;">
+      <h2 id="instancesTitle" style="font-size: 20px; font-weight: bold; margin-bottom: 1rem;">Instances</h2>
+      <div style="background-color: white; border-radius: 0.5rem; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="border-bottom: 1px solid #e5e7eb;">
+              <th style="padding: 0.75rem 1rem; text-align: left; font-weight: 600;">SKU</th>
+              <th style="padding: 0.75rem 1rem; text-align: left; font-weight: 600; border-left: 1px solid #e5e7eb;">Item Name</th>
+              <th style="padding: 0.75rem 1rem; text-align: left; font-weight: 600; border-left: 1px solid #e5e7eb;">Qty</th>
+            </tr>
+          </thead>
+          <tbody id="instancesTableBody">
+            <!-- Instance rows will be inserted here by JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Material 3 Bottom Sheet -->
+  <div id="bottomSheet" class="bottom-sheet">
+    <div class="scrim"></div>
+    <div class="bottom-sheet-container">
+      <div class="bottom-sheet-header">
+        <div class="bottom-sheet-drag-handle"></div>
+      </div>
+      <div class="bottom-sheet-content">
+        <div id="typeChips" class="choice-chip-group" style="display: none;">
+          <button class="choice-chip" data-value="item">Item</button>
+          <button class="choice-chip" data-value="variants">Variants</button>
+          <button class="choice-chip" data-value="service">Service</button>
+        </div>
+        <div id="textFieldContainer" class="text-field-container">
+          <input type="text" id="bottomSheetInput" class="text-field-input" placeholder=" " />
+        </div>
+        <button id="bottomSheetSubmit" class="button-primary">Submit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add this HTML for the Type bottom sheet -->
+  <div id="typeBottomSheet" class="bottom-sheet">
+    <div class="scrim"></div>
+    <div class="bottom-sheet-container">
+      <div class="bottom-sheet-header">
+        <div class="bottom-sheet-drag-handle"></div>
+      </div>
+      <div class="bottom-sheet-content">
+        <div id="typeChips" class="choice-chip-group">
+          <button class="choice-chip" data-value="Item">Item</button>
+          <button class="choice-chip" data-value="Variants">Variants</button>
+          <button class="choice-chip" data-value="Service">Service</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Update the Image bottom sheet -->
+  <div id="imageBottomSheet" class="bottom-sheet">
+    <div class="scrim"></div>
+    <div class="bottom-sheet-container">
+      <div class="bottom-sheet-header">
+        <div class="bottom-sheet-drag-handle"></div>
+      </div>
+      <div class="bottom-sheet-content">
+        <h3 style="margin-bottom: 16px;">Add Image</h3>
+        <div class="image-options">
+          <button class="image-option" id="chooseFromLibrary">
+            <span class="material-icons">photo_library</span>
+            <span>Choose from library</span>
+          </button>
+          <button class="image-option" id="takePhoto">
+            <span class="material-icons">photo_camera</span>
+            <span>Take a photo</span>
+          </button>
+          <button class="image-option" id="addFromUrl">
+            <span class="material-icons">link</span>
+            <span>Add image from URL</span>
+          </button>
+        </div>
+        <div id="urlInputContainer" style="display: none; margin-top: 16px;">
+          <input type="text" id="imageUrlInput" placeholder="Enter image URL" style="width: 100%; padding: 8px; margin-bottom: 8px;">
+          <button id="addUrlImage" class="button-primary">Add Image</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add this HTML for the Media bottom sheet -->
+  <div id="mediaBottomSheet" class="bottom-sheet">
+    <div class="scrim"></div>
+    <div class="bottom-sheet-container">
+      <div class="bottom-sheet-header">
+        <div class="bottom-sheet-drag-handle"></div>
+      </div>
+      <div class="bottom-sheet-content">
+        <div id="mediaPreview" style="max-width: 100%; max-height: 70vh; display: flex; justify-content: center; align-items: center; margin-bottom: 16px;">
+          <!-- Media preview will be inserted here by JavaScript -->
+        </div>
+        <div class="choice-chip-group">
+          <button id="removeMediaChip" class="choice-chip" style="background-color: white; color: #000;">Remove</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .bottom-sheet {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  .scrim {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.32);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+
+  .bottom-sheet-container {
+    background-color: #fff;
+    border-radius: 28px 28px 0 0;
+    padding: 24px;
+    transform: translateY(100%);
+    transition: transform 0.25s ease;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    max-height: 90vh; /* Limit the height to 90% of the viewport */
+    overflow-y: auto; /* Add scrolling if content exceeds the height */
+  }
+
+  .bottom-sheet-header {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+
+  .bottom-sheet-drag-handle {
+    width: 32px;
+    height: 4px;
+    background-color: #E0E0E0;
+    border-radius: 2px;
+  }
+
+  .bottom-sheet-content {
+    padding: 0;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .text-field-container {
+    margin-bottom: 16px;
+    width: 100%;
+  }
+
+  .text-field-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #79747E;
+    border-radius: 4px;
+    font-size: 16px;
+    background-color: transparent;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+  }
+
+  .text-field-input:focus {
+    border-color: #6750A4;
+    outline: none;
+  }
+
+  .text-field-input::placeholder {
+    color: #79747E;
+  }
+
+  .button-primary {
+    background-color: #6750A4;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 100px;
+    padding: 10px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: block;
+    margin: 0 auto;
+    width: 100%;
+    max-width: 200px;
+  }
+
+  .button-primary:hover {
+    background-color: #7C6EBF;
+  }
+
+  .bottom-sheet.active {
+    pointer-events: auto;
+  }
+
+  .bottom-sheet.active .scrim {
+    opacity: 1;
+  }
+
+  .bottom-sheet.active .bottom-sheet-container {
+    transform: translateY(0);
+  }
+
+  .button-tonal {
+    background-color: #FFFFFF;
+    color: #1D192B;
+    border: 1px solid #79747E;
+    padding: 10px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .button-tonal:hover {
+    background-color: #F4EFF4;
+  }
+
+  .button-tonal:active {
+    background-color: #E8DEF8;
+  }
+
+  .choice-chip-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .choice-chip {
+    background-color: #FFFFFF; /* Changed to white */
+    color: #000000;
+    border: 1px solid #E0E0E0; /* Added light gray border */
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+  }
+
+  .choice-chip:hover {
+    background-color: #F5F5F5; /* Light gray background on hover */
+  }
+
+  .choice-chip.selected {
+    background-color: #E8DEF8; /* Light purple background for selected state */
+    color: #000000;
+    border-color: #6750A4; /* Darker border for selected state */
+  }
+
+  .cell-highlight {
+    background-color: #f5f5f5; /* Very light grey background */
+    outline: none; /* Remove the outline */
+  }
+
+  /* Style for when the cell is being edited */
+  [contenteditable="true"]:focus {
+    background-color: #f5f5f5; /* Very light grey background */
+    outline: none; /* Remove the outline */
+    box-shadow: none; /* Remove any box shadow if present */
+  }
+
+  main {
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .image-options {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .image-option {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    background-color: #F4EFF4;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .image-option:hover {
+    background-color: #E8DEF8;
+  }
+
+  .image-option .material-icons {
+    margin-right: 12px;
+  }
+
+  .thumbnail {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 4px;
+  }
+
+  #imageCarouselContainer {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  #imageThumbnails {
+    display: flex;
+    overflow-x: auto;
+    gap: 12px;
+    padding-bottom: 12px;
+    scroll-behavior: smooth;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
+  }
+
+  #imageThumbnails::-webkit-scrollbar {
+    display: none; /* WebKit */
+  }
+
+  #imageGrid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .thumbnail {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 3px;
+    flex-shrink: 0;
+    border: 1px solid #e0e0e0;
+  }
+
+  .file-thumbnail {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f0f0f0;
+    font-size: 20px;
+    color: #666;
+  }
+
+  .file-icon {
+    font-size: 24px;
+  }
+
+  // Remove or comment out the .scroll-button styles if you're not using them anymore
+
+  /* Add these styles to your existing styles */
+  .media-thumbnail {
+    cursor: pointer;
+  }
+
+  #mediaBottomSheet .bottom-sheet-container {
+    max-height: 80vh;
+  }
+
+  #mediaBottomSheet .bottom-sheet-content {
+    padding: 16px;
+  }
+
+  .choice-chip {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+
+  .choice-chip:hover {
+    background-color: #f0f0f0;
+  }
+
+  .search-container {
+    margin-bottom: 16px;
+  }
+
+  .search-bar {
+    display: flex;
+    align-items: center;
+    background-color: #f5f5f5;
+    border-radius: 28px;
+    padding: 0.5rem 1rem;
+    max-width: 100%;
+    margin: 0 auto;
+  }
+
+  .material-icons {
+    color: #5f6368;
+    margin-right: 0.5rem;
+  }
+
+  .search-input {
+    border: none;
+    background: transparent;
+    font-size: 1rem;
+    width: 100%;
+    outline: none;
+    color: #202124;
+  }
+
+  .search-input::placeholder {
+    color: #5f6368;
+  }
+
+  .category-list {
+    max-height: calc(80vh - 120px);
+    overflow-y: auto;
+    padding-right: 16px;
+  }
+
+  .category-item {
+    margin-bottom: 2px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+  }
+
+  .category-name {
+    font-weight: bold;
+    margin-bottom: 8px;
+    display: block;
+    font-size: 16px;
+    color: #333;
+  }
+
+  .subcategory-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+  }
+
+  .choice-chip {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+
+  .choice-chip:hover {
+    background-color: #f0f0f0;
+  }
+
+  .category-dropdown {
+    position: absolute;
+    background-color: white; /* Ensure white background */
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    display: none;
+    z-index: 1000;
+    overflow-y: auto;
+    max-height: 200px; /* Limit the height of the dropdown */
+  }
+
+  .category-list {
+    background-color: white; /* Ensure white background for the list */
+  }
+
+  .category-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    background-color: white; /* Ensure white background for each item */
+  }
+
+  .category-item:hover {
+    background-color: #f5f5f5; /* Light gray background on hover */
+  }
+
+  .category-name {
+    font-weight: bold;
+    color: #333; /* Dark text color for better contrast on white */
+  }
+
+  .category-dropdown-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e0e0e0;
+  }
+
+  .category-search-input {
+    flex-grow: 1;
+    border: none;
+    font-size: 16px;
+    margin-left: 12px;
+    outline: none;
+  }
+
+  .category-list {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .category-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 16px;
+    cursor: pointer;
+  }
+
+  .category-item:hover {
+    background-color: #f5f5f5;
+  }
+
+  .category-name {
+    font-weight: bold;
+  }
+
+  .category-parent {
+    color: #666;
+  }
+
+  .side-panel {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 100%;
+    height: 100%;
+    background-color: white;
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+    transition: right 0.3s ease;
+    z-index: 1000;
+    overflow-y: auto;
+  }
+
+  .side-panel.active {
+    right: 0;
+  }
+
+  .side-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid #e0e0e0;
+  }
+
+  .close-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.5rem;
+  }
+
+  .category-list {
+    padding: 1rem;
+  }
+
+  .category-item {
+    margin-bottom: 1rem;
+  }
+
+  .category-name {
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  .subcategory-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  /* Add this new style for the submit button */
+  #submitButton {
+    border-radius: 5px;
+  }
+</style>
+
+<script define:vars={{ categories, productId }}>
+  document.addEventListener('DOMContentLoaded', async () => {
+    const productId = new URLSearchParams(window.location.search).get('id');
+    const categoryParam = new URLSearchParams(window.location.search).get('category');
+    let db;
+
+    // Move productInstances inside the DOMContentLoaded event listener
+    const productInstances = [
+      { sku: "SKU001", name: "Wireless Bluetooth Headphones", qty: 50 },
+      { sku: "SKU002", name: "Smart Fitness Tracker", qty: 30 },
+      { sku: "SKU003", name: "Portable Power Bank", qty: 100 },
+      { sku: "SKU004", name: "Wireless Charging Pad", qty: 75 },
+      { sku: "SKU005", name: "Noise-Canceling Earbuds", qty: 25 },
+    ];
+
+    const openDB = () => {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open('productdb', 1);
+        request.onerror = (event) => reject('IndexedDB error: ' + event.target.error);
+        request.onsuccess = (event) => resolve(event.target.result);
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains('core')) {
+            db.createObjectStore('core', { keyPath: 'id' });
+          }
+        };
+      });
+    };
+
+    // DOM element selections
+    const coreTable = document.getElementById('coreTable');
+    const bottomSheet = document.getElementById('bottomSheet');
+    const bottomSheetInput = document.getElementById('bottomSheetInput');
+    const bottomSheetSubmit = document.getElementById('bottomSheetSubmit');
+    const submitButton = document.getElementById('submitButton');
+    const typeBottomSheet = document.getElementById('typeBottomSheet');
+    const textFieldContainer = document.getElementById('textFieldContainer');
+    const variantSection = document.getElementById('variantSection');
+    const instancesSection = document.getElementById('instancesSection');
+    const instancesTitle = document.getElementById('instancesTitle');
+    const instancesTableBody = document.getElementById('instancesTableBody');
+    const imageBottomSheet = document.getElementById('imageBottomSheet');
+    const mediaGrid = document.getElementById('mediaGrid');
+    const mediasCell = document.querySelector('td[data-key="Medias"]');
+    const mediaBottomSheet = document.getElementById('mediaBottomSheet');
+    const mediaPreview = document.getElementById('mediaPreview');
+
+    let currentCell = null;
+
+    let pageState = {
+      type: localStorage.getItem('productType') || 'Variant Item'
+    };
+
+    let productMedias = [];
+
+    let currentMediaIndex = -1;
+
+    let currentProduct = null;
+
+    // Function to create a new product record
+    function createNewProduct() {
+      currentProduct = {
+        id: Date.now().toString(),
+        Name: "",
+        Medias: [],
+        Type: "Item",
+        Category: "",
+        Notes: ""
+      };
+      localStorage.setItem('currentProduct', JSON.stringify(currentProduct));
+      loadProductData(currentProduct);
+    }
+
+    // Function to update currentProduct and local storage
+    function updateCurrentProduct(key, value) {
+      if (currentProduct) {
+        currentProduct[key] = value;
+        localStorage.setItem('currentProduct', JSON.stringify(currentProduct));
+      }
+    }
+
+    function updatePageState(newState) {
+      pageState = { ...pageState, ...newState };
+      localStorage.setItem('productType', pageState.type);
+      updateSections(pageState.type);
+    }
+
+    function updateSections(type) {
+      if (variantSection && instancesSection && instancesTitle) {
+        if (type === 'Item') {
+          variantSection.style.display = 'none';
+          instancesSection.style.display = 'block';
+          instancesTitle.textContent = 'Instance';
+          renderSingleInstance();
+        } else if (type === 'Variants' || type === 'Service') {
+          variantSection.style.display = 'block';
+          instancesSection.style.display = 'block';
+          instancesTitle.textContent = 'Instances';
+          renderInstances(productInstances);
+        } else {
+          variantSection.style.display = 'none';
+          instancesSection.style.display = 'none';
+        }
+      }
+    }
+
+    function renderInstances(instances) {
+      if (instancesTableBody) {
+        instancesTableBody.innerHTML = instances.map((instance, index) => `
+          <tr style="${index !== instances.length - 1 ? "border-bottom: 1px solid #e5e7eb;" : ""}">
+            <td style="padding: 0.75rem 1rem; font-weight: 500;">${instance.sku}</td>
+            <td style="padding: 0.75rem 1rem; border-left: 1px solid #e5e7eb;">${instance.name}</td>
+            <td style="padding: 0.75rem 1rem; border-left: 1px solid #e5e7eb;">${instance.qty}</td>
+          </tr>
+        `).join('');
+      }
+    }
+
+    function renderSingleInstance(product) {
+      if (instancesTableBody) {
+        instancesTableBody.innerHTML = `
+          <tr>
+            <td style="padding: 0.75rem 1rem; font-weight: 500;">${product.SKU || ''}</td>
+            <td style="padding: 0.75rem 1rem; border-left: 1px solid #e5e7eb;">${product.Name || ''}</td>
+            <td style="padding: 0.75rem 1rem; border-left: 1px solid #e5e7eb;">${product.Qty || ''}</td>
+          </tr>
+        `;
+      }
+    }
+
+    async function loadProductData(product) {
+      console.log('Loading product data:', product);
+      currentProduct = product;
+      localStorage.setItem('currentProduct', JSON.stringify(currentProduct));
+
+      const coreTable = document.getElementById('coreTable');
+      if (coreTable) {
+        coreTable.dataset.productId = product.id || '';
+        const cells = coreTable.querySelectorAll('td[data-key]');
+        cells.forEach(cell => {
+          const key = cell.dataset.key;
+          if (key === 'Medias') {
+            if (product[key] && Array.isArray(product[key])) {
+              productMedias = product[key];
+              renderMediaThumbnails();
+            }
+          } else if (key === 'Type') {
+            cell.textContent = product[key] || 'Item';
+            updatePageState({ type: product[key] || 'Item' });
+            updateSections(product[key] || 'Item');
+          } else {
+            cell.textContent = product[key] || '';
+          }
+        });
+      }
+
+      // Load variant attributes if the product type is 'Variants'
+      if (product.Type === 'Variants' && product.variantAttributes) {
+        const variantTable = document.querySelector('#variantSection table tbody');
+        if (variantTable) {
+          variantTable.innerHTML = '';
+          Object.entries(product.variantAttributes).forEach(([key, value]) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td style="padding: 0.75rem 1rem; font-weight: 500;">${key.charAt(0).toUpperCase() + key.slice(1)}</td>
+              <td style="padding: 0.75rem 1rem; border-left: 1px solid #e5e7eb;">${value}</td>
+            `;
+            variantTable.appendChild(row);
+          });
+        }
+      }
+
+      // Load instances if they exist
+      if (product.instances && Array.isArray(product.instances)) {
+        renderInstances(product.instances);
+      } else if (product.Type === 'Item') {
+        renderSingleInstance(product);
+      }
+    }
+
+    async function saveProductData() {
+      const productData = currentProduct || {};
+      const cells = coreTable.querySelectorAll('td[data-key]');
+      cells.forEach(cell => {
+        const key = cell.dataset.key;
+        if (key === 'Medias') {
+          productData[key] = productMedias;
+        } else {
+          productData[key] = cell.textContent.trim();
+        }
+      });
+
+      try {
+        const transaction = db.transaction(['core'], 'readwrite');
+        const coreStore = transaction.objectStore('core');
+        await coreStore.put(productData);
+        console.log('Product data saved successfully');
+        
+        // Clear currentProduct from local storage
+        localStorage.removeItem('currentProduct');
+        
+        // Redirect to the products page after saving
+        window.location.href = '/products/products';
+      } catch (error) {
+        console.error('Error saving product data:', error);
+        alert('Error saving product data');
+      }
+    }
+
+    function openBottomSheet(cell) {
+      currentCell = cell;
+      const key = cell.dataset.key;
+      
+      if (typeBottomSheet) {
+        const typeChips = typeBottomSheet.querySelector('#typeChips');
+        if (typeChips) typeChips.style.display = 'none';
+      }
+      if (textFieldContainer) textFieldContainer.style.display = 'block';
+      if (bottomSheetSubmit) bottomSheetSubmit.style.display = 'block';
+      if (bottomSheetInput) {
+        bottomSheetInput.value = cell.textContent.trim();
+        bottomSheetInput.placeholder = key;
+        bottomSheetInput.classList.remove('has-value');
+      }
+
+      if (bottomSheet) {
+        bottomSheet.classList.add('active');
+        if (bottomSheetInput) bottomSheetInput.focus();
+      }
+    }
+
+    function closeBottomSheet() {
+      if (bottomSheet) bottomSheet.classList.remove('active');
+      currentCell = null;
+    }
+
+    function openImageBottomSheet() {
+      if (imageBottomSheet) imageBottomSheet.classList.add('active');
+    }
+
+    function closeImageBottomSheet() {
+      if (imageBottomSheet) imageBottomSheet.classList.remove('active');
+    }
+
+    function handleCellFocus(e) {
+      const cell = e.target.closest('td[data-key]');
+      if (cell) {
+        const key = cell.dataset.key;
+        if (key === 'Medias' && cell === cell.parentElement.firstElementChild) {
+          e.preventDefault();
+          openMediaSelector();
+        } else if (key === 'Type') {
+          e.preventDefault();
+          openTypeBottomSheet();
+        } else if (key === 'Category') {
+          e.preventDefault();
+          window.location.href = '/products/selectcategory?returnUrl=' + encodeURIComponent(window.location.href);
+        } else if (key === 'Unit') {
+          e.preventDefault();
+          window.location.href = '/products/selectunit?returnUrl=' + encodeURIComponent(window.location.href);
+        } else if (cell.hasAttribute('contenteditable')) {
+          cell.dataset.before = cell.textContent;
+          cell.classList.add('cell-highlight');
+        }
+      }
+    }
+
+    function handleCellBlur(e) {
+      const cell = e.target.closest('td[contenteditable]');
+      if (cell) {
+        const newValue = cell.textContent.trim();
+        const oldValue = cell.dataset.before;
+        delete cell.dataset.before;
+        cell.classList.remove('cell-highlight');
+
+        if (newValue !== oldValue) {
+          handleValueChange(cell, newValue);
+          updateCurrentProduct(cell.dataset.key, newValue);
+        }
+      }
+    }
+
+    function handleCellKeydown(e) {
+      const cell = e.target.closest('td[contenteditable]');
+      if (cell && e.key === 'Enter') {
+        e.preventDefault();
+        cell.blur();
+      }
+    }
+
+    function handleValueChange(cell, newValue) {
+      const key = cell.dataset.key;
+      if (key === 'Type') {
+        updatePageState({ type: newValue });
+      }
+      // Add any other specific handling for different keys if needed
+    }
+
+    function openTypeBottomSheet() {
+      if (typeBottomSheet) typeBottomSheet.classList.add('active');
+    }
+
+    function closeTypeBottomSheet() {
+      if (typeBottomSheet) typeBottomSheet.classList.remove('active');
+    }
+
+    function renderMediaThumbnails() {
+      if (mediaGrid) {
+        mediaGrid.innerHTML = productMedias.map((file, index) => {
+          if (file && typeof file === 'object' && file.type) {
+            return `
+              <div class="media-thumbnail" title="${file.name}" data-index="${index}">
+                ${file.type.startsWith('image/') 
+                  ? `<img src="${URL.createObjectURL(file)}" alt="${file.name}" style="width: 40px; height: 40px; object-fit: cover;">` 
+                  : `<span class="material-icons media-icon">videocam</span>`
+                }
+              </div>
+            `;
+          } else {
+            console.warn(`Invalid media item at index ${index}:`, file);
+            return ''; // Return an empty string for invalid items
+          }
+        }).join('');
+      }
+    }
+
+    function addMediaToProduct(file) {
+      productMedias.push(file);
+      renderMediaThumbnails();
+    }
+
+    function openMediaSelector() {
+      console.log('Opening media selector'); // Add this line for debugging
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.multiple = true;
+      input.accept = 'image/*,video/*';
+      input.onchange = (e) => {
+        const files = e.target.files;
+        if (files) {
+          for (let i = 0; i < files.length; i++) {
+            if (files[i].type.startsWith('image/') || files[i].type.startsWith('video/')) {
+              addMediaToProduct(files[i]);
+            }
+          }
+        }
+      };
+      input.click();
+    }
+
+    function openMediaBottomSheet(file, index) {
+      if (mediaBottomSheet && mediaPreview) {
+        currentMediaIndex = index;
+        mediaPreview.innerHTML = '';
+        if (file.type.startsWith('image/')) {
+          const img = document.createElement('img');
+          img.src = URL.createObjectURL(file);
+          img.style.maxWidth = '100%';
+          img.style.maxHeight = '70vh';
+          mediaPreview.appendChild(img);
+        } else if (file.type.startsWith('video/')) {
+          const video = document.createElement('video');
+          video.src = URL.createObjectURL(file);
+          video.controls = true;
+          video.style.maxWidth = '100%';
+          video.style.maxHeight = '70vh';
+          mediaPreview.appendChild(video);
+        }
+        mediaBottomSheet.classList.add('active');
+      }
+    }
+
+    function closeMediaBottomSheet() {
+      if (mediaBottomSheet) {
+        mediaBottomSheet.classList.remove('active');
+        currentMediaIndex = -1;
+      }
+    }
+
+    function removeMedia() {
+      if (currentMediaIndex !== -1) {
+        productMedias.splice(currentMediaIndex, 1);
+        renderMediaThumbnails();
+        closeMediaBottomSheet();
+      }
+    }
+
+    // Event Listeners
+    if (coreTable) {
+      coreTable.addEventListener('click', (e) => {
+        const cell = e.target.closest('td[data-key]');
+        if (cell) {
+          handleCellFocus(e);
+        }
+      });
+      coreTable.addEventListener('focus', (e) => {
+        const cell = e.target.closest('td[contenteditable]');
+        if (cell) {
+          cell.dataset.before = cell.textContent;
+          cell.classList.add('cell-highlight');
+        }
+      }, true);
+      coreTable.addEventListener('blur', handleCellBlur, true);
+      coreTable.addEventListener('keydown', handleCellKeydown, true);
+
+      const mediasValueCell = coreTable.querySelector('td[data-key="Medias"]:last-child');
+      if (mediasValueCell) {
+        mediasValueCell.addEventListener('click', (e) => {
+          const thumbnail = e.target.closest('.media-thumbnail');
+          if (thumbnail) {
+            const index = parseInt(thumbnail.dataset.index, 10);
+            if (!isNaN(index) && index >= 0 && index < productMedias.length) {
+              openMediaBottomSheet(productMedias[index], index);
+            }
+          }
+        });
+      }
+    }
+
+    const typeCell = document.querySelector('td[data-key="Type"]:last-child');
+    if (typeCell) {
+      typeCell.removeAttribute('contenteditable');
+    }
+
+    const mediasTypeCell = document.querySelector('td[data-key="Medias"]');
+    if (mediasTypeCell) {
+      mediasTypeCell.removeAttribute('contenteditable');
+    }
+
+    if (typeBottomSheet) {
+      const typeChips = typeBottomSheet.querySelector('#typeChips');
+      if (typeChips) {
+        typeChips.addEventListener('click', (e) => {
+          const chip = e.target.closest('.choice-chip');
+          if (chip && typeCell) {
+            const newValue = chip.dataset.value;
+            typeCell.textContent = newValue;
+            updatePageState({ type: newValue });
+            closeTypeBottomSheet(); // This line ensures the bottom sheet closes for all selections
+          }
+        });
+      }
+
+      typeBottomSheet.addEventListener('click', (e) => {
+        if (e.target === typeBottomSheet || e.target.classList.contains('scrim')) {
+          closeTypeBottomSheet();
+        }
+      });
+    }
+
+    if (mediaBottomSheet) {
+      mediaBottomSheet.addEventListener('click', (e) => {
+        if (e.target === mediaBottomSheet || e.target.classList.contains('scrim')) {
+          closeMediaBottomSheet();
+        }
+      });
+
+      const removeMediaChip = mediaBottomSheet.querySelector('#removeMediaChip');
+      if (removeMediaChip) {
+        removeMediaChip.addEventListener('click', removeMedia);
+      }
+    }
+
+    // Add event listener for FAB click
+    const fab = document.querySelector('.fab'); // Make sure to add a class 'fab' to your Floating Action Button
+    if (fab) {
+      fab.addEventListener('click', createNewProduct);
+    }
+
+    try {
+      db = await openDB();
+      
+      if (productId) {
+        const transaction = db.transaction(['core'], 'readonly');
+        const coreStore = transaction.objectStore('core');
+        const productRequest = coreStore.get(productId);
+        
+        productRequest.onsuccess = (event) => {
+          const product = event.target.result;
+          if (product) {
+            console.log('Product found:', product);
+            loadProductData(product);
+          } else {
+            console.error('Product not found');
+            // Handle the case where the product doesn't exist
+            loadProductData({}); // Load empty product data
+          }
+        };
+
+        productRequest.onerror = (event) => {
+          console.error('Error fetching product:', event.target.error);
+          // Handle the error (e.g., show an error message to the user)
+          loadProductData({}); // Load empty product data
+        };
+      } else {
+        // Check if there's a currentProduct in local storage
+        const storedProduct = localStorage.getItem('currentProduct');
+        if (storedProduct) {
+          loadProductData(JSON.parse(storedProduct));
+        } else {
+          // If there's no productId and no stored product, we're creating a new product
+          createNewProduct();
+        }
+      }
+
+      if (submitButton) {
+        submitButton.addEventListener('click', saveProductData);
+      }
+    } catch (error) {
+      console.error('Error opening IndexedDB:', error);
+      loadProductData({}); // Load empty product data in case of error
+    }
+
+    // Initial setup
+    if (typeCell) {
+      typeCell.textContent = pageState.type;
+      updateSections(pageState.type);
+    }
+  });
+</script>

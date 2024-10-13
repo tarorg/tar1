@@ -1,0 +1,46 @@
+---
+const { attribute, onChange } = Astro.props;
+
+const typeOptions = [
+  { value: 'text', label: 'Text' },
+  { value: 'number', label: 'Number' },
+  { value: 'date', label: 'Date' },
+  { value: 'checkbox', label: 'Checkbox' },
+  { value: 'select', label: 'Select' },
+];
+---
+
+<div class="attribute-selector">
+  <span class="attribute-name">{attribute.name}</span>
+  <select id={`attribute-type-${attribute.name}`} class="attribute-dropdown">
+    <option value="">Select type</option>
+    {typeOptions.map((option) => (
+      <option value={option.value} selected={option.value === attribute.type}>
+        {option.label}
+      </option>
+    ))}
+  </select>
+</div>
+
+<script define:vars={{ attribute, onChange }}>
+  document.getElementById(`attribute-type-${attribute.name}`).addEventListener('change', (event) => {
+    onChange({ ...attribute, type: event.target.value });
+  });
+</script>
+
+<style>
+  .attribute-selector {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  .attribute-name {
+    margin-right: 1rem;
+    font-weight: bold;
+  }
+  .attribute-dropdown {
+    padding: 0.5rem;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+  }
+</style>

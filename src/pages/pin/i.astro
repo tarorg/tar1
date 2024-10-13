@@ -1,0 +1,120 @@
+---
+import Menu from '../../components/Menu.astro';
+---
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pin - i</title>
+</head>
+<body>
+    <Menu />
+    <main>
+        <div class="search-container">
+            <input type="text" class="search-bar" placeholder="Search...">
+            <button class="search-button">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+            </button>
+        </div>
+    </main>
+    
+    <!-- Floating Action Button -->
+    <button class="fab" aria-label="Add">+</button>
+</body>
+</html>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+    }
+    main {
+        padding: 20px;
+    }
+    .search-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 20px;
+    }
+    .search-bar {
+        width: 80%;
+        max-width: 500px;
+        padding: 10px 15px;
+        font-size: 16px;
+        border: 1px solid #ddd;
+        border-radius: 25px 0 0 25px;
+        outline: none;
+    }
+    .search-button {
+        background-color: #f0f0f0;
+        border: 1px solid #ddd;
+        border-left: none;
+        padding: 10px 15px;
+        border-radius: 0 25px 25px 0;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    .search-button:hover {
+        background-color: #e0e0e0;
+    }
+    .fab {
+        position: fixed;
+        bottom: 100px; /* Moved up a little */
+        right: 50px; /* Moved left a little */
+        width: 56px;
+        height: 56px;
+        border-radius: 5px;
+        background-color: white;
+        color: #808080; /* Changed to grey */
+        border: 2px solid #d3d3d3;
+        font-size: 24px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.3s, transform 0.3s;
+        z-index: 1000;
+    }
+    .fab:hover {
+        background-color: #f0f0f0;
+    }
+    .fab:active {
+        transform: scale(0.95);
+    }
+</style>
+
+<script>
+    const fab = document.querySelector('.fab');
+    if (fab) {
+        fab.addEventListener('click', () => {
+            window.location.href = '/pin/p';
+        });
+    }
+
+    const searchButton = document.querySelector('.search-button');
+    const searchBar = document.querySelector('.search-bar');
+
+    if (searchButton && searchBar) {
+        searchButton.addEventListener('click', () => {
+            performSearch();
+        });
+
+        searchBar.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                performSearch();
+            }
+        });
+    }
+
+    function performSearch() {
+        const searchTerm = searchBar.value;
+        console.log('Searching for:', searchTerm);
+        // Implement your search functionality here
+    }
+</script>

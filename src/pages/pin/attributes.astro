@@ -1,0 +1,709 @@
+---
+import categories from './cat.json';
+import attributes from './at.json';
+---
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Core Database</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto; /* Changed from 20px auto to 0 auto */
+            font-family: Arial, sans-serif;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .property {
+            color: #333;
+            width: 25%;
+        }
+        .value {
+            color: #000;
+            width: 75%;
+        }
+        .value:focus {
+            outline: none;
+            background-color: #f8f8f8;
+        }
+        .type-toggle {
+            cursor: pointer;
+        }
+        .category-wrapper {
+            position: relative;
+        }
+        .category-input {
+            width: 100%;
+            padding: 0;
+            border: none;
+            background-color: transparent;
+            font-size: inherit;
+            font-family: inherit;
+            color: inherit;
+            cursor: pointer;
+        }
+        .category-input:focus {
+            outline: none;
+        }
+        .category-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: white;
+            border: 1px solid #ddd;
+            max-height: 150px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        .category-option {
+            padding: 8px;
+            cursor: pointer;
+        }
+        .category-option:hover {
+            background-color: #f0f0f0;
+        }
+        .media-cell {
+            position: relative;
+        }
+        .media-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        .media-item {
+            width: 32px;
+            height: 32px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f8f8f8;
+        }
+        .media-item img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: cover;
+        }
+        .media-item span {
+            font-size: 20px;
+            line-height: 32px;
+        }
+        .media-upload {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .media-upload input {
+            display: none;
+        }
+        .add-icon {
+            font-size: 24px;
+            line-height: 1;
+            color: #666;
+        }
+        .media-trigger {
+            cursor: pointer;
+        }
+        .media-trigger:hover {
+            background-color: #f0f0f0;
+        }
+        /* Add these new styles for the attributes table */
+        #attributesTable .type-cell {
+            width: 25%;
+        }
+
+        #attributesTable .value-cell {
+            width: calc(100% - 25% - 32px);
+        }
+
+        #attributesTable .asset-cell {
+            width: 32px;
+        }
+
+        /* Add this new style to remove margin between tables */
+        #attributesTable {
+            margin-top: -1px; /* Negative margin to overlap borders */
+        }
+        .attribute-wrapper {
+            position: relative;
+        }
+        .attribute-input {
+            width: 100%;
+            padding: 0;
+            border: none;
+            background-color: transparent;
+            font-size: inherit;
+            font-family: inherit;
+            color: inherit;
+            cursor: pointer;
+        }
+        .attribute-input:focus {
+            outline: none;
+        }
+        .attribute-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: white;
+            border: 1px solid #ddd;
+            max-height: 150px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        .attribute-option {
+            padding: 8px;
+            cursor: pointer;
+        }
+        .attribute-option:hover {
+            background-color: #f0f0f0;
+        }
+        .attribute-value-wrapper {
+            position: relative;
+        }
+        .attribute-value-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            min-height: 24px;
+            padding: 2px;
+        }
+        .attribute-value-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        .attribute-value-tag {
+            background-color: #e0e0e0;
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+        }
+        .attribute-value-tag-remove {
+            margin-left: 4px;
+            cursor: pointer;
+        }
+        .attribute-value-input {
+            flex-grow: 1;
+            border: none;
+            outline: none;
+            font-size: inherit;
+            font-family: inherit;
+            min-width: 60px;
+        }
+        .attribute-value-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: white;
+            border: 1px solid #ddd;
+            max-height: 150px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        .attribute-value-option {
+            padding: 8px;
+            cursor: pointer;
+        }
+        .attribute-value-option:hover {
+            background-color: #f0f0f0;
+        }
+        .asset-preview {
+            width: 32px;
+            height: 32px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            background-color: #f8f8f8;
+        }
+
+        .asset-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .asset-preview .upload-icon {
+            font-size: 20px;
+            color: #888;
+        }
+        .attributes-cell {
+            text-align: left;
+            font-weight: bold;
+            padding: 12px;
+            background-color: #f8f8f8;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .attributes-label {
+            flex-grow: 1;
+        }
+
+        .add-attribute-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #000000; /* Changed to black */
+            font-size: 24px;
+            font-weight: normal;
+            transition: color 0.3s ease;
+            margin-left: 10px;
+        }
+
+        .add-attribute-icon:hover {
+            color: #333333; /* Darker shade on hover */
+        }
+
+        #coreTable {
+            width: 100%;
+        }
+
+        #attributesTable {
+            width: 100%;
+            margin-top: -1px; /* To overlap borders */
+        }
+    </style>
+</head>
+<body>
+    <table id="coreTable">
+        <thead>
+            <tr>
+                <th class="property">Property</th>
+                <th class="value">Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="property">Name</td>
+                <td class="value" contenteditable="true" data-max-length="50"></td>
+            </tr>
+            <tr>
+                <td class="property">Type</td>
+                <td class="value type-toggle" tabindex="0">Item</td>
+            </tr>
+            <tr>
+                <td class="property">Category</td>
+                <td class="value category-wrapper">
+                    <input type="text" class="category-input" placeholder="Select a category">
+                    <div class="category-dropdown">
+                        {categories.categories.map((category) => (
+                            <div class="category-option" data-value={category}>{category}</div>
+                        ))}
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td class="property media-trigger">Medias</td>
+                <td class="value media-cell">
+                    <div class="media-preview"></div>
+                    <input type="file" id="mediaInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" style="display: none;">
+                </td>
+            </tr>
+            <tr>
+                <td class="property">Notes</td>
+                <td class="value" contenteditable="true"></td>
+            </tr>
+            <tr>
+                <td colspan="2" class="value attributes-cell">
+                    <span class="attributes-label">Attributes</span>
+                    <span class="add-attribute-icon">+</span>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table id="attributesTable">
+        <thead>
+            <tr>
+                <th class="property type-cell">Type</th>
+                <th class="property value-cell">Value</th>
+                <th class="property asset-cell">Asset</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="value type-cell attribute-wrapper">
+                    <input type="text" class="attribute-input" placeholder="Select Type">
+                    <div class="attribute-dropdown">
+                        {attributes.attributes.map((attribute) => (
+                            <div class="attribute-option" data-value={attribute.Type}>{attribute.Type}</div>
+                        ))}
+                    </div>
+                </td>
+                <td class="value value-cell attribute-value-wrapper">
+                    <input type="text" class="attribute-value-input" placeholder="Select value">
+                    <div class="attribute-value-dropdown"></div>
+                </td>
+                <td class="value asset-cell">
+                    <div class="asset-preview"></div>
+                    <input type="color" class="color-picker" style="display: none;">
+                    <input type="file" class="file-upload" style="display: none;" accept="image/*">
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <script define:vars={{ attributes }}>
+        const coreTable = document.getElementById('coreTable');
+        const attributesTable = document.getElementById('attributesTable');
+
+        // Name field character limit
+        const nameCell = document.querySelector('.value[data-max-length]');
+        if (nameCell) {
+            nameCell.addEventListener('input', function() {
+                const maxLength = parseInt(this.getAttribute('data-max-length') || '50');
+                if (this.textContent && this.textContent.length > maxLength) {
+                    this.textContent = this.textContent.slice(0, maxLength);
+                }
+            });
+        }
+
+        // Type toggle functionality
+        const typeCell = document.querySelector('.type-toggle');
+        const typeOptions = ['Item', 'Variants', 'Service'];
+        let currentTypeIndex = 0;
+
+        function toggleType() {
+            currentTypeIndex = (currentTypeIndex + 1) % typeOptions.length;
+            if (typeCell) {
+                typeCell.textContent = typeOptions[currentTypeIndex];
+            }
+        }
+
+        if (typeCell) {
+            typeCell.addEventListener('click', toggleType);
+
+            typeCell.addEventListener('keydown', function(e) {
+                if (e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggleType();
+                }
+            });
+        }
+
+        // Category dropdown functionality
+        const categoryInput = document.querySelector('.category-input');
+        const categoryDropdown = document.querySelector('.category-dropdown');
+        const categoryOptions = document.querySelectorAll('.category-option');
+
+        categoryInput.addEventListener('focus', () => {
+            categoryDropdown.style.display = 'block';
+        });
+
+        categoryInput.addEventListener('blur', () => {
+            setTimeout(() => {
+                categoryDropdown.style.display = 'none';
+            }, 200);
+        });
+
+        categoryInput.addEventListener('input', () => {
+            const filter = categoryInput.value.toLowerCase();
+            categoryOptions.forEach((option) => {
+                const text = option.textContent?.toLowerCase();
+                if (text && text.includes(filter)) {
+                    option.style.display = 'block';
+                } else {
+                    option.style.display = 'none';
+                }
+            });
+        });
+
+        categoryOptions.forEach((option) => {
+            option.addEventListener('click', () => {
+                categoryInput.value = option.textContent || '';
+                categoryDropdown.style.display = 'none';
+                console.log(`Category updated to: ${categoryInput.value}`);
+                // Here you can add code to save the changes, e.g., send to a server
+            });
+        });
+
+        // Logging changes for other fields
+        document.querySelectorAll('.value:not(.category-wrapper):not(.option1-wrapper)').forEach(cell => {
+            cell.addEventListener('blur', function() {
+                const previousSibling = this.previousElementSibling;
+                if (previousSibling && previousSibling.textContent && this.textContent) {
+                    console.log(`${previousSibling.textContent} updated to: ${this.textContent}`);
+                }
+                // Here you can add code to save the changes, e.g., send to a server
+            });
+        });
+
+        // Media upload functionality
+        const mediaTrigger = document.querySelector('.media-trigger');
+        const mediaInput = document.getElementById('mediaInput');
+        const mediaPreview = document.querySelector('.media-preview');
+
+        mediaTrigger.addEventListener('click', () => {
+            mediaInput.click();
+        });
+
+        mediaInput.addEventListener('change', (event) => {
+            const files = event.target.files;
+            if (files) {
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const reader = new FileReader();
+
+                    reader.onload = (e) => {
+                        const mediaItem = document.createElement('div');
+                        mediaItem.className = 'media-item';
+                        mediaItem.style.width = '32px';
+                        mediaItem.style.height = '32px';
+
+                        if (file.type.startsWith('image/')) {
+                            const img = document.createElement('img');
+                            img.src = e.target.result;
+                            img.alt = file.name;
+                            img.style.width = '32px';
+                            img.style.height = '32px';
+                            mediaItem.appendChild(img);
+                        } else {
+                            const fileIcon = document.createElement('span');
+                            fileIcon.textContent = getFileIcon(file.type);
+                            mediaItem.appendChild(fileIcon);
+                        }
+
+                        mediaPreview.appendChild(mediaItem);
+                    };
+
+                    reader.readAsDataURL(file);
+                }
+
+                console.log(`Medias updated: ${files.length} file(s) added`);
+                // Here you can add code to save the changes, e.g., send to a server
+            }
+        });
+
+        // Add this function to determine the appropriate icon
+        function getFileIcon(fileType) {
+            if (fileType.includes('pdf')) return '📄';
+            if (fileType.includes('doc')) return '📝';
+            if (fileType.includes('xls')) return '📊';
+            return '📁'; // default icon for other file types
+        }
+
+        // Attribute table functionality
+        const attributeInput = document.querySelector('.attribute-input');
+        const attributeDropdown = document.querySelector('.attribute-dropdown');
+        const attributeOptions = document.querySelectorAll('.attribute-option');
+        const attributeValueInput = document.querySelector('.attribute-value-input');
+        const attributeValueDropdown = document.querySelector('.attribute-value-dropdown');
+        const assetPreview = document.querySelector('.asset-preview');
+        const colorPicker = document.querySelector('.color-picker');
+        const fileUpload = document.querySelector('.file-upload');
+
+        // Show attribute dropdown
+        attributeInput.addEventListener('click', () => {
+            attributeDropdown.style.display = 'block';
+        });
+
+        // Hide attribute dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!attributeInput.contains(e.target) && !attributeDropdown.contains(e.target)) {
+                attributeDropdown.style.display = 'none';
+            }
+        });
+
+        // Filter attribute options
+        attributeInput.addEventListener('input', () => {
+            const filter = attributeInput.value.toLowerCase();
+            attributeOptions.forEach((option) => {
+                const text = option.textContent?.toLowerCase();
+                if (text && text.includes(filter)) {
+                    option.style.display = 'block';
+                } else {
+                    option.style.display = 'none';
+                }
+            });
+            attributeDropdown.style.display = 'block';
+        });
+
+        // Select attribute and populate value dropdown
+        attributeOptions.forEach((option) => {
+            option.addEventListener('click', () => {
+                attributeInput.value = option.textContent || '';
+                attributeDropdown.style.display = 'none';
+                console.log(`Attribute Type updated to: ${attributeInput.value}`);
+                
+                const selectedAttribute = attributeInput.value;
+                const attributeValues = attributes.attributes.find(attr => attr.Type === selectedAttribute)?.values || [];
+                
+                attributeValueDropdown.innerHTML = '';
+                
+                attributeValues.forEach(value => {
+                    const valueOption = document.createElement('div');
+                    valueOption.className = 'attribute-value-option';
+                    valueOption.textContent = value;
+                    valueOption.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        attributeValueInput.value = value;
+                        attributeValueDropdown.style.display = 'none';
+                        console.log(`Attribute Value updated to: ${value}`);
+                    });
+                    attributeValueDropdown.appendChild(valueOption);
+                });
+
+                attributeValueInput.value = '';
+                updateAssetCell(selectedAttribute);
+            });
+        });
+
+        // Show attribute value dropdown
+        attributeValueInput.addEventListener('click', () => {
+            attributeValueDropdown.style.display = 'block';
+        });
+
+        // Hide attribute value dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!attributeValueInput.contains(e.target) && !attributeValueDropdown.contains(e.target)) {
+                attributeValueDropdown.style.display = 'none';
+            }
+        });
+
+        // Filter attribute value options
+        attributeValueInput.addEventListener('input', () => {
+            const filter = attributeValueInput.value.toLowerCase();
+            const options = attributeValueDropdown.querySelectorAll('.attribute-value-option');
+            options.forEach(option => {
+                const text = option.textContent.toLowerCase();
+                option.style.display = text.includes(filter) ? 'block' : 'none';
+            });
+            attributeValueDropdown.style.display = 'block';
+        });
+
+        // Asset cell functionality
+        function updateAssetCell(attributeType) {
+            if (attributeType.toLowerCase() === 'color') {
+                assetPreview.innerHTML = '';
+                assetPreview.style.backgroundColor = '#f8f8f8'; // Default color
+                assetPreview.addEventListener('click', () => colorPicker.click());
+                colorPicker.style.display = 'none';
+                fileUpload.style.display = 'none';
+            } else {
+                assetPreview.innerHTML = '<span class="upload-icon">+</span>';
+                assetPreview.style.backgroundColor = '#f8f8f8';
+                assetPreview.addEventListener('click', () => fileUpload.click());
+                colorPicker.style.display = 'none';
+                fileUpload.style.display = 'none';
+            }
+        }
+
+        colorPicker.addEventListener('change', (e) => {
+            assetPreview.style.backgroundColor = e.target.value;
+            console.log(`Color Asset updated to: ${e.target.value}`);
+        });
+
+        fileUpload.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+
+                reader.onload = (event) => {
+                    if (file.type.startsWith('image/')) {
+                        assetPreview.innerHTML = `<img src="${event.target.result}" alt="Uploaded asset">`;
+                        assetPreview.style.backgroundColor = 'transparent';
+                    } else {
+                        assetPreview.innerHTML = `<span>${getFileIcon(file.type)}</span>`;
+                        assetPreview.style.backgroundColor = '#f8f8f8';
+                    }
+                };
+
+                reader.readAsDataURL(file);
+                console.log(`Asset updated to: ${file.name}`);
+                // Here you can add code to handle the file upload, e.g., send to a server
+            }
+        });
+
+        function getFileIcon(fileType) {
+            if (fileType.includes('pdf')) return '📄';
+            if (fileType.includes('doc')) return '📝';
+            if (fileType.includes('xls')) return '📊';
+            return '📁'; // default icon for other file types
+        }
+
+        // Logging changes for other fields (including the new Notes field)
+        document.querySelectorAll('.value:not(.category-wrapper):not(.option1-wrapper):not(.media-cell)').forEach(cell => {
+            cell.addEventListener('blur', function() {
+                const previousSibling = this.previousElementSibling;
+                if (previousSibling && previousSibling.textContent && this.textContent) {
+                    console.log(`${previousSibling.textContent} updated to: ${this.textContent}`);
+                }
+                // Here you can add code to save the changes, e.g., send to a server
+            });
+        });
+
+        // Add attribute functionality
+        const addAttributeIcon = document.querySelector('.add-attribute-icon');
+        const attributesTable = document.getElementById('attributesTable');
+
+        addAttributeIcon.addEventListener('click', () => {
+            const newRow = attributesTable.insertRow(-1);
+            newRow.innerHTML = `
+                <td class="value type-cell attribute-wrapper">
+                    <input type="text" class="attribute-input" placeholder="Select Type">
+                    <div class="attribute-dropdown">
+                        ${attributes.attributes.map(attribute => `
+                            <div class="attribute-option" data-value="${attribute.Type}">${attribute.Type}</div>
+                        `).join('')}
+                    </div>
+                </td>
+                <td class="value value-cell attribute-value-wrapper">
+                    <input type="text" class="attribute-value-input" placeholder="Select value">
+                    <div class="attribute-value-dropdown"></div>
+                </td>
+                <td class="value asset-cell">
+                    <div class="asset-preview"></div>
+                    <input type="color" class="color-picker" style="display: none;">
+                    <input type="file" class="file-upload" style="display: none;" accept="image/*">
+                </td>
+            `;
+
+            // Reinitialize event listeners for the new row
+            initializeAttributeRow(newRow);
+        });
+
+        function initializeAttributeRow(row) {
+            // Add event listeners and functionality for the new row
+            // This function should include all the necessary event listeners and logic
+            // for attribute type selection, value selection, and asset handling
+            // You may need to refactor your existing code to make this reusable
+        }
+    </script>
+</body>
+</html>

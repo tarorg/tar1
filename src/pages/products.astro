@@ -1,0 +1,215 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Menu from '../components/Menu.astro';
+---
+
+<Layout title="Products">
+  <Menu />
+  <main>
+    <div class="header">
+      <h1>Products</h1>
+    </div>
+    <div class="search-container">
+      <div class="search-bar">
+        <span class="material-icons">search</span>
+        <input type="text" id="searchInput" placeholder="Search products" class="search-input">
+      </div>
+    </div>
+    <div class="product-list">
+      <!-- Product items will be inserted here by JavaScript -->
+    </div>
+  </main>
+
+  <!-- Material 3 FAB -->
+  <a href="/prod" class="fab">
+    <span class="material-icons">add</span>
+  </a>
+</Layout>
+
+<style>
+  main {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 1rem;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    font-weight: bold;
+  }
+
+  .search-container {
+    margin-bottom: 1rem;
+  }
+
+  .search-bar {
+    display: flex;
+    align-items: center;
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+  }
+
+  .search-input {
+    border: none;
+    background: transparent;
+    font-size: 1rem;
+    width: 100%;
+    margin-left: 0.5rem;
+    outline: none;
+  }
+
+  .product-list {
+    background-color: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .product-item {
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .product-item:last-child {
+    border-bottom: none;
+  }
+
+  .product-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    cursor: pointer;
+  }
+
+  .product-name {
+    font-weight: 500;
+  }
+
+  .product-type {
+    font-size: 0.9rem;
+    color: #666;
+  }
+
+  .fab {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background-color: #FFFFFF;
+    color: #1D192B;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s ease;
+    text-decoration: none;
+    border: 1px solid #E0E0E0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .fab:hover {
+    background-color: #F4EFF4;
+  }
+
+  .fab .material-icons {
+    font-size: 24px;
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    const productList = document.querySelector('.product-list');
+    const searchInput = document.getElementById('searchInput');
+
+    let db;
+
+    const openDB = () => {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open('productdb', 2);
+        request.onerror = (event) => reject('IndexedDB error: ' + event.target.error);
+        request.onsuccess = (event) => resolve(event.target.result);
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains('core')) {
+            db.createObjectStore('core', { keyPath: 'id' });
+          }
+        };
+      });
+    };
+
+    const getAllProducts = () => {
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction(['core'], 'readonly');
+        const objectStore = transaction.objectStore('core');
+        const request = objectStore.getAll();
+        request.onerror = (event) => reject('Error fetching products: ' + event.target.error);
+        request.onsuccess = (event) => resolve(event.target.result);
+      });
+    };
+
+    function renderProducts(products) {
+      if (!productList) return;
+      productList.innerHTML = '';
+      if (products.length === 0) {
+        productList.innerHTML = '<div class="product-item"><div class="product-header">No products found</div></div>';
+      } else {
+        products.forEach(product => {
+          const productItem = document.createElement('div');
+          productItem.className = 'product-item';
+          productItem.innerHTML = `
+            <div class="product-header" data-id="${product.id}">
+              <span class="product-name">${product.Name || ''}</span>
+              <span class="product-type">${product.Type || ''}</span>
+            </div>
+          `;
+          productList.appendChild(productItem);
+        });
+      }
+    }
+
+    try {
+      db = await openDB();
+      const products = await getAllProducts();
+      renderProducts(products);
+    } catch (error) {
+      console.error('Error:', error);
+      if (productList) {
+        productList.innerHTML = `<div class="product-item"><div class="product-header" style="color: red;">Error loading products: ${error}</div></div>`;
+      }
+    }
+
+    if (productList) {
+      productList.addEventListener('click', (e) => {
+        const productHeader = e.target.closest('.product-header');
+        if (productHeader) {
+          const productId = productHeader.dataset.id;
+          window.location.href = `/prod?id=${productId}`;
+        }
+      });
+    }
+
+    if (searchInput) {
+      searchInput.addEventListener('input', async function() {
+        const searchTerm = this.value.toLowerCase();
+        try {
+          const allProducts = await getAllProducts();
+          const filteredProducts = allProducts.filter(product => 
+            product.Name.toLowerCase().includes(searchTerm) ||
+            product.id.toLowerCase().includes(searchTerm)
+          );
+          renderProducts(filteredProducts);
+        } catch (error) {
+          console.error('Error searching products:', error);
+        }
+      });
+    }
+  });
+</script>

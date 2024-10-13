@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Weight",
+    "units": ["Gram", "Kilogram", "Pound", "Ounce"]
+  },
+  {
+    "name": "Length",
+    "units": ["Millimeter", "Centimeter", "Meter", "Inch", "Foot"]
+  },
+  {
+    "name": "Volume",
+    "units": ["Milliliter", "Liter", "Gallon", "Fluid Ounce"]
+  },
+  {
+    "name": "Quantity",
+    "units": ["Piece", "Dozen", "Hundred", "Thousand"]
+  },
+  {
+    "name": "Time",
+    "units": ["Second", "Minute", "Hour", "Day"]
+  },
+  {
+    "name": "Numbers",
+    "units": ["NOs"]
+  }
+]
