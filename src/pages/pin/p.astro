@@ -15,15 +15,15 @@ import '../../styles/global.css';
         <div class="bg-gray-100 rounded-md p-3 mb-4 flex items-center justify-between">
             <h1 id="pageTitle" class="text-2xl font-bold text-left">Product name</h1>
             <div class="flex space-x-3">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600 cursor-pointer hover:text-gray-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg id="editIcon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600 cursor-pointer hover:text-gray-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600 cursor-pointer hover:text-gray-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg id="notesIcon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600 cursor-pointer hover:text-gray-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
             </div>
         </div>
-        <div id="corebox" class="border border-gray-200 rounded-lg overflow-hidden">
+        <div id="corebox" class="border border-gray-200 rounded-lg overflow-hidden hidden mb-8">
             <table id="coreTable" class="w-full border-collapse">
                 <tbody>
                     <tr class="border-b border-gray-200">
@@ -83,6 +83,11 @@ import '../../styles/global.css';
                 </tbody>
             </table>
         </div>
+
+        <!-- Notes container without the "Notes" text -->
+        <div id="notesContainer" class="w-full">
+            <div id="editorjs" class="border border-gray-200 rounded-lg p-4 min-h-[300px]"></div>
+        </div>
     </div>
 
     <!-- Bottom Sheet -->
@@ -112,6 +117,62 @@ import '../../styles/global.css';
             </div>
         </div>
     </div>
+
+    <!-- Add Editor.js and its dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/paragraph@latest"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize Editor.js
+            const editor = new EditorJS({
+                holder: 'editorjs',
+                tools: {
+                    header: {
+                        class: Header,
+                        inlineToolbar: ['link']
+                    },
+                    list: {
+                        class: List,
+                        inlineToolbar: true
+                    },
+                    paragraph: {
+                        class: Paragraph,
+                        inlineToolbar: true
+                    }
+                },
+                data: {
+                    blocks: [
+                        {
+                            type: "paragraph",
+                            data: {
+                                text: "Start writing your notes here..."
+                            }
+                        }
+                    ]
+                },
+                placeholder: 'Type here to add notes...'
+            });
+
+            // Function to save Editor.js content
+            async function saveEditorContent() {
+                try {
+                    const savedData = await editor.save();
+                    console.log('Notes saved:', savedData);
+                    // Here you can add code to send the savedData to your server
+                } catch (error) {
+                    console.error('Saving failed: ', error);
+                }
+            }
+
+            // Add event listener to save notes periodically or on specific actions
+            setInterval(saveEditorContent, 30000); // Save every 30 seconds
+
+            console.log('Editor.js initialization complete');
+        });
+    </script>
 
     <script define:vars={{ attributes }}>
         function setupDropdown(inputSelector, dropdownSelector, optionsSelector) {
@@ -467,6 +528,22 @@ import '../../styles/global.css';
             e.stopPropagation(); // Prevent the click from propagating to the document
             closeBottomSheet();
         });
+
+        // Show/Hide Core Table functionality
+        const editIcon = document.getElementById('editIcon');
+        const corebox = document.getElementById('corebox');
+
+        editIcon.addEventListener('click', () => {
+            corebox.classList.toggle('hidden');
+        });
+
+        // Show/Hide Notes Container functionality
+        const notesIcon = document.getElementById('notesIcon');
+        const notesContainer = document.getElementById('notesContainer');
+
+        notesIcon.addEventListener('click', () => {
+            notesContainer.classList.toggle('hidden');
+        });
     </script>
 
     <style>
@@ -655,6 +732,39 @@ import '../../styles/global.css';
         /* Add styles for the icons */
         .bg-gray-100 svg {
             transition: color 0.2s ease-in-out;
+        }
+
+        #corebox {
+            transition: opacity 0.3s ease, max-height 0.3s ease;
+            opacity: 1;
+            max-height: 2000px; /* Adjust this value based on your needs */
+            overflow: hidden;
+        }
+
+        #corebox.hidden {
+            opacity: 0;
+            max-height: 0;
+        }
+
+        #notesContainer {
+            margin-top: 2rem;
+            display: block; /* Ensure the container is visible */
+            transition: opacity 0.3s ease, max-height 0.3s ease;
+            opacity: 1;
+            max-height: 2000px; /* Adjust this value based on your needs */
+            overflow: hidden;
+        }
+
+        #notesContainer.hidden {
+            opacity: 0;
+            max-height: 0;
+        }
+
+        #editorjs {
+            background-color: white;
+            min-height: 300px; /* Set a minimum height to make it visible */
+            border: 1px solid #e5e7eb; /* Add a border to make it more visible */
+            padding: 1rem; /* Add some padding */
         }
     </style>
 </body>
