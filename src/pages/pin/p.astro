@@ -316,26 +316,38 @@ import '../../styles/global.css';
         const typeSelector = document.getElementById('typeSelector');
 
         let currentValues = [];
-        let selectedValues = new Set();
+        let selectedValues = new Map();
         let activeTypeValueInput = null;
+        let activeTypeInput = null;
 
         typeValueInputs.forEach((typeValueInput, index) => {
             typeValueInput.addEventListener('click', () => {
-                const selectedType = typeInputs[index].value;
+                const typeInput = typeInputs[index];
+                const selectedType = typeInput.value;
                 const attribute = attributes.attributes.find(attr => attr.Type === selectedType);
                 if (attribute) {
                     currentValues = attribute.values;
+                    activeTypeValueInput = typeValueInput;
+                    activeTypeInput = typeInput;
+                    
+                    // Initialize selected values for this attribute if not already set
+                    if (!selectedValues.has(selectedType)) {
+                        selectedValues.set(selectedType, new Set());
+                    }
+                    
                     populateBottomSheet(currentValues);
                     openBottomSheet();
-                    activeTypeValueInput = typeValueInput;
                 }
             });
         });
 
         function populateBottomSheet(values) {
+            if (!activeTypeInput) return; // Add this check
+            
             const isItemType = typeSelector.textContent === 'Item';
+            const currentSelectedValues = selectedValues.get(activeTypeInput.value) || new Set();
             bottomSheetContent.innerHTML = values.map(value => 
-                `<div class="py-2 px-4 hover:bg-gray-100 cursor-pointer bottom-sheet-item ${isItemType ? '' : (selectedValues.has(value) ? 'bg-blue-100' : '')}">${value}</div>`
+                `<div class="py-2 px-4 hover:bg-gray-100 cursor-pointer bottom-sheet-item ${isItemType ? '' : (currentSelectedValues.has(value) ? 'bg-blue-100' : '')}">${value}</div>`
             ).join('');
         }
 
@@ -347,11 +359,8 @@ import '../../styles/global.css';
 
         function closeBottomSheet() {
             bottomSheet.classList.add('translate-y-full');
-            if (typeSelector.textContent !== 'Item') {
-                selectedValues.clear(); // Clear selected values when closing for non-Item types
-            }
             if (activeTypeValueInput) {
-                activeTypeValueInput.blur(); // Remove focus from the active input
+                activeTypeValueInput.blur();
             }
         }
 
@@ -367,18 +376,19 @@ import '../../styles/global.css';
             if (e.target.classList.contains('bottom-sheet-item')) {
                 const value = e.target.textContent;
                 const isItemType = typeSelector.textContent === 'Item';
+                const currentSelectedValues = selectedValues.get(activeTypeInput.value);
 
                 if (isItemType) {
-                    selectedValues.clear();
-                    selectedValues.add(value);
+                    currentSelectedValues.clear();
+                    currentSelectedValues.add(value);
                     updateTypeValueInput();
                     closeBottomSheet();
                 } else {
-                    if (selectedValues.has(value)) {
-                        selectedValues.delete(value);
+                    if (currentSelectedValues.has(value)) {
+                        currentSelectedValues.delete(value);
                         e.target.classList.remove('bg-blue-100');
                     } else {
-                        selectedValues.add(value);
+                        currentSelectedValues.add(value);
                         e.target.classList.add('bg-blue-100');
                     }
                     updateTypeValueInput();
@@ -387,10 +397,25 @@ import '../../styles/global.css';
         });
 
         function updateTypeValueInput() {
-            if (activeTypeValueInput) {
-                activeTypeValueInput.value = Array.from(selectedValues).join(', ');
+            if (activeTypeValueInput && activeTypeInput) {
+                const currentSelectedValues = selectedValues.get(activeTypeInput.value);
+                activeTypeValueInput.value = Array.from(currentSelectedValues).join(', ');
             }
         }
+
+        // Close bottom sheet when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!bottomSheet.contains(e.target) && !e.target.classList.contains('type-value-input')) {
+                closeBottomSheet();
+            }
+        });
+
+        // Close bottom sheet with ESC key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeBottomSheet();
+            }
+        });
 
         // Type selector functionality
         typeSelector.addEventListener('click', () => {
@@ -535,6 +560,85 @@ import '../../styles/global.css';
 
         // You might want to call saveEditorContent() periodically or when the user navigates away from the page
         window.addEventListener('beforeunload', saveEditorContent);
+
+        // Add new script for the instances table
+        document.addEventListener('DOMContentLoaded', () => {
+            const instancesTable = document.getElementById('instancesTableBody');
+            const optionRows = document.querySelectorAll('.option-row');
+            const optionsSelector = document.getElementById('optionsSelector');
+            
+            function generateCombinations(options) {
+                if (options.length === 0) return [[]];
+                const firstOption = options[0];
+                const restOptions = options.slice(1);
+                const combinationsWithoutFirst = generateCombinations(restOptions);
+                const combinations = [];
+                for (const value of firstOption.values) {
+                    for (const combination of combinationsWithoutFirst) {
+                        combinations.push([value, ...combination]);
+                    }
+                }
+                return combinations;
+            }
+
+            function updateInstancesTable() {
+                if (!instancesTable) return;
+                instancesTable.innerHTML = ''; // Clear existing rows
+
+                const visibleOptionRows = Array.from(optionRows).slice(0, parseInt(optionsSelector.textContent));
+                const options = visibleOptionRows
+                    .map(row => {
+                        const typeInput = row.querySelector('.type-input');
+                        const valueInput = row.querySelector('.type-value-input');
+                        if (typeInput && valueInput && typeInput.value && valueInput.value) {
+                            return {
+                                type: typeInput.value,
+                                values: valueInput.value.split(',').map(v => v.trim()).filter(v => v)
+                            };
+                        }
+                        return null;
+                    })
+                    .filter(option => option !== null);
+
+                const combinations = generateCombinations(options);
+
+                combinations.forEach((combination, index) => {
+                    const newRow = document.createElement('tr');
+                    const sku = `SKU-${index + 1}`;
+                    const variant = combination.join(' - ');
+                    newRow.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap w-3/4 border-r border-gray-200">
+                            <div class="flex flex-col">
+                                <input type="text" class="w-full focus:outline-none font-medium" value="${sku}" readonly>
+                                <input type="text" class="w-full focus:outline-none text-sm text-gray-500 mt-1" value="${variant}" readonly>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap w-1/4">
+                            <input type="number" class="w-full focus:outline-none" value="0">
+                        </td>
+                    `;
+                    instancesTable.appendChild(newRow);
+                });
+            }
+
+            // Update instances table when option values change
+            optionRows.forEach(row => {
+                const valueInput = row.querySelector('.type-value-input');
+                if (valueInput) {
+                    valueInput.addEventListener('input', updateInstancesTable);
+                }
+            });
+
+            // Update instances table when the number of options changes
+            const optionsDecrease = document.getElementById('optionsDecrease');
+            const optionsIncrease = document.getElementById('optionsIncrease');
+
+            optionsDecrease.addEventListener('click', updateInstancesTable);
+            optionsIncrease.addEventListener('click', updateInstancesTable);
+
+            // Initial update
+            updateInstancesTable();
+        });
     </script>
 
     <style>
@@ -798,7 +902,6 @@ import '../../styles/global.css';
 
     <!-- Add the new Notion-like table here -->
     <div class="mt-8 max-w-4xl mx-auto p-4">
-        <h2 class="text-2xl font-bold mb-4">Instances</h2>
         <div class="bg-white rounded-lg shadow-sm overflow-hidden">
             <table class="w-full">
                 <thead>
@@ -813,47 +916,6 @@ import '../../styles/global.css';
             </table>
         </div>
     </div>
-
-    <script>
-        // ... (previous script content remains unchanged)
-
-        // Add new script for the instances table
-        document.addEventListener('DOMContentLoaded', () => {
-            const instancesTable = document.getElementById('instancesTableBody');
-            
-            // Function to add a new row
-            function addNewRow() {
-                if (!instancesTable) return;
-                const newRow = document.createElement('tr');
-                newRow.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap w-3/4 border-r border-gray-200">
-                        <div class="flex flex-col">
-                            <input type="text" class="w-full focus:outline-none font-medium" placeholder="Enter SKU">
-                            <input type="text" class="w-full focus:outline-none text-sm text-gray-500 mt-1" placeholder="variant">
-                        </div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap w-1/4">
-                        <input type="number" class="w-full focus:outline-none" placeholder="">
-                    </td>
-                `;
-                instancesTable.appendChild(newRow);
-            }
-
-            // Add a new row when the last row is being edited
-            instancesTable?.addEventListener('input', (event) => {
-                const target = event.target as HTMLElement;
-                if (target.tagName === 'INPUT') {
-                    const row = target.closest('tr');
-                    if (row === instancesTable?.lastElementChild) {
-                        addNewRow();
-                    }
-                }
-            });
-
-            // Initialize with one empty row
-            addNewRow();
-        });
-    </script>
 
     <style>
         /* ... (previous styles remain unchanged) */
