@@ -23,7 +23,7 @@ import '../../styles/global.css';
                 </svg>
             </div>
         </div>
-        <div id="corebox" class="border border-gray-200 rounded-lg overflow-hidden hidden mb-8">
+        <div id="corebox" class="border border-gray-200 rounded-lg overflow-hidden hidden">
             <table id="coreTable" class="w-full border-collapse">
                 <tbody>
                     <tr class="border-b border-gray-200">
@@ -83,10 +83,9 @@ import '../../styles/global.css';
                 </tbody>
             </table>
         </div>
-
-        <!-- Notes container without the "Notes" text -->
-        <div id="notesContainer" class="w-full">
-            <div id="editorjs" class="border border-gray-200 rounded-lg p-4 min-h-[300px]"></div>
+        <div id="notesContainer" class="border border-gray-200 rounded-lg overflow-hidden p-4 hidden">
+            <h2 class="text-xl font-semibold mb-4">Notes</h2>
+            <textarea id="notesTextarea" class="w-full h-32 p-2 border rounded-md" placeholder="Enter your notes here..."></textarea>
         </div>
     </div>
 
@@ -117,62 +116,6 @@ import '../../styles/global.css';
             </div>
         </div>
     </div>
-
-    <!-- Add Editor.js and its dependencies -->
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/paragraph@latest"></script>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Initialize Editor.js
-            const editor = new EditorJS({
-                holder: 'editorjs',
-                tools: {
-                    header: {
-                        class: Header,
-                        inlineToolbar: ['link']
-                    },
-                    list: {
-                        class: List,
-                        inlineToolbar: true
-                    },
-                    paragraph: {
-                        class: Paragraph,
-                        inlineToolbar: true
-                    }
-                },
-                data: {
-                    blocks: [
-                        {
-                            type: "paragraph",
-                            data: {
-                                text: "Start writing your notes here..."
-                            }
-                        }
-                    ]
-                },
-                placeholder: 'Type here to add notes...'
-            });
-
-            // Function to save Editor.js content
-            async function saveEditorContent() {
-                try {
-                    const savedData = await editor.save();
-                    console.log('Notes saved:', savedData);
-                    // Here you can add code to send the savedData to your server
-                } catch (error) {
-                    console.error('Saving failed: ', error);
-                }
-            }
-
-            // Add event listener to save notes periodically or on specific actions
-            setInterval(saveEditorContent, 30000); // Save every 30 seconds
-
-            console.log('Editor.js initialization complete');
-        });
-    </script>
 
     <script define:vars={{ attributes }}>
         function setupDropdown(inputSelector, dropdownSelector, optionsSelector) {
@@ -529,20 +472,20 @@ import '../../styles/global.css';
             closeBottomSheet();
         });
 
-        // Show/Hide Core Table functionality
+        // Add these new event listeners at the end of the script
         const editIcon = document.getElementById('editIcon');
+        const notesIcon = document.getElementById('notesIcon');
         const corebox = document.getElementById('corebox');
+        const notesContainer = document.getElementById('notesContainer');
 
         editIcon.addEventListener('click', () => {
             corebox.classList.toggle('hidden');
+            notesContainer.classList.add('hidden');
         });
-
-        // Show/Hide Notes Container functionality
-        const notesIcon = document.getElementById('notesIcon');
-        const notesContainer = document.getElementById('notesContainer');
 
         notesIcon.addEventListener('click', () => {
             notesContainer.classList.toggle('hidden');
+            corebox.classList.add('hidden');
         });
     </script>
 
@@ -734,37 +677,13 @@ import '../../styles/global.css';
             transition: color 0.2s ease-in-out;
         }
 
-        #corebox {
-            transition: opacity 0.3s ease, max-height 0.3s ease;
-            opacity: 1;
-            max-height: 2000px; /* Adjust this value based on your needs */
-            overflow: hidden;
+        /* Add these new styles */
+        #editIcon, #notesIcon {
+            transition: color 0.2s ease-in-out;
         }
 
-        #corebox.hidden {
-            opacity: 0;
-            max-height: 0;
-        }
-
-        #notesContainer {
-            margin-top: 2rem;
-            display: block; /* Ensure the container is visible */
-            transition: opacity 0.3s ease, max-height 0.3s ease;
-            opacity: 1;
-            max-height: 2000px; /* Adjust this value based on your needs */
-            overflow: hidden;
-        }
-
-        #notesContainer.hidden {
-            opacity: 0;
-            max-height: 0;
-        }
-
-        #editorjs {
-            background-color: white;
-            min-height: 300px; /* Set a minimum height to make it visible */
-            border: 1px solid #e5e7eb; /* Add a border to make it more visible */
-            padding: 1rem; /* Add some padding */
+        #corebox, #notesContainer {
+            transition: opacity 0.3s ease-in-out;
         }
     </style>
 </body>
