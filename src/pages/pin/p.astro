@@ -10,9 +10,9 @@ import '../../styles/global.css';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Core Database</title>
 </head>
-<body class="bg-white text-gray-900 font-sans p-6">
-    <div class="max-w-4xl mx-auto">
-        <div class="bg-gray-100 rounded-md p-3 mb-4 flex items-center justify-between">
+<body class="bg-white text-gray-900 font-sans">
+    <div class="max-w-4xl mx-auto p-4">
+        <div class="bg-white rounded-md p-3 mb-4 flex items-center justify-between shadow-sm">
             <h1 id="pageTitle" class="text-2xl font-bold text-left">Product name</h1>
             <div class="flex space-x-3">
                 <svg id="editIcon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600 cursor-pointer hover:text-gray-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -23,8 +23,8 @@ import '../../styles/global.css';
                 </svg>
             </div>
         </div>
-        <div id="corebox" class="border border-gray-200 rounded-lg overflow-hidden hidden">
-            <table id="coreTable" class="w-full border-collapse">
+        <div id="corebox" class="bg-white rounded-lg shadow-sm overflow-hidden hidden">
+            <table id="coreTable" class="w-full">
                 <tbody>
                     <tr class="border-b border-gray-200">
                         <td class="py-2 px-4 font-medium border-r border-gray-200">Name</td>
@@ -83,9 +83,8 @@ import '../../styles/global.css';
                 </tbody>
             </table>
         </div>
-        <div id="notesContainer" class="border border-gray-200 rounded-lg overflow-hidden p-4 hidden">
-            <h2 class="text-xl font-semibold mb-4">Notes</h2>
-            <textarea id="notesTextarea" class="w-full h-32 p-2 border rounded-md" placeholder="Enter your notes here..."></textarea>
+        <div id="notesContainer" class="bg-white rounded-lg shadow-sm overflow-hidden p-4 hidden">
+            <div id="editorjs"></div>
         </div>
     </div>
 
@@ -116,6 +115,11 @@ import '../../styles/global.css';
             </div>
         </div>
     </div>
+
+    <!-- Add Editor.js and its plugins -->
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
 
     <script define:vars={{ attributes }}>
         function setupDropdown(inputSelector, dropdownSelector, optionsSelector) {
@@ -486,7 +490,51 @@ import '../../styles/global.css';
         notesIcon.addEventListener('click', () => {
             notesContainer.classList.toggle('hidden');
             corebox.classList.add('hidden');
+            if (!notesContainer.classList.contains('hidden')) {
+                initializeEditor();
+            }
         });
+
+        // Add these new variables and functions for Editor.js
+        let editor;
+
+        function initializeEditor() {
+            if (editor) {
+                editor.destroy();
+            }
+
+            editor = new EditorJS({
+                holder: 'editorjs',
+                tools: {
+                    header: {
+                        class: Header,
+                        inlineToolbar: ['link']
+                    },
+                    list: {
+                        class: List,
+                        inlineToolbar: true
+                    }
+                },
+                data: {}, // You can load saved data here
+                placeholder: 'Enter your notes here...'
+            });
+        }
+
+        // Add a function to save the editor content
+        async function saveEditorContent() {
+            if (editor) {
+                try {
+                    const savedData = await editor.save();
+                    console.log('Notes saved:', savedData);
+                    // Here you can add code to send the saved data to your server
+                } catch (error) {
+                    console.error('Saving failed: ', error);
+                }
+            }
+        }
+
+        // You might want to call saveEditorContent() periodically or when the user navigates away from the page
+        window.addEventListener('beforeunload', saveEditorContent);
     </script>
 
     <style>
@@ -684,6 +732,67 @@ import '../../styles/global.css';
 
         #corebox, #notesContainer {
             transition: opacity 0.3s ease-in-out;
+        }
+
+        /* Add or modify these styles */
+        #notesContainer {
+            height: calc(100vh - 120px); /* Adjust this value as needed */
+        }
+
+        #notesTextarea {
+            border: none;
+            background-color: transparent;
+        }
+
+        /* Add these new styles for Editor.js */
+        #editorjs {
+            height: 100%;
+        }
+
+        .codex-editor__redactor {
+            padding-bottom: 100px !important;
+        }
+
+        /* Add these new styles for the corebox */
+        #corebox {
+            width: 100%;
+            margin-left: 0;
+            margin-right: 0;
+            background-color: white;
+        }
+
+        #coreTable {
+            width: 100%;
+        }
+
+        #coreTable td {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        body {
+            background-color: white;
+        }
+
+        #corebox, #notesContainer {
+            width: 100%;
+            background-color: white;
+            margin-top: 1rem;
+        }
+
+        #coreTable {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        #coreTable td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        #coreTable tr:last-child td {
+            border-bottom: none;
         }
     </style>
 </body>
