@@ -42,9 +42,11 @@ import '../../styles/global.css';
                         </td>
                     </tr>
                     <tr class="border-b border-gray-200">
-                        <td class="py-2 px-4 font-medium border-r border-gray-200">Medias</td>
-                        <td class="py-2 px-4 media-cell cursor-pointer transition-colors duration-200">
+                        <td class="py-2 px-4 font-medium border-r border-gray-200 media-cell cursor-pointer transition-colors duration-200">
                             <input type="file" id="mediaInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" class="hidden">
+                            Medias
+                        </td>
+                        <td class="py-2 px-4">
                             <div class="media-preview flex flex-wrap gap-2"></div>
                         </td>
                     </tr>
@@ -120,6 +122,23 @@ import '../../styles/global.css';
     <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
+
+    <!-- Add this HTML for the media bottom sheet just before the closing </body> tag -->
+    <div id="mediaBottomSheet" class="fixed inset-x-0 bottom-0 bg-white shadow-md rounded-t-xl transform translate-y-full transition-transform duration-300 ease-in-out z-50">
+        <div class="p-4">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">Media Files</h3>
+                <button id="closeMediaBottomSheet" class="text-gray-500 hover:text-gray-700 focus:outline-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div id="mediaBottomSheetContent" class="grid grid-cols-2 gap-4">
+                <!-- Media items will be populated here -->
+            </div>
+        </div>
+    </div>
 
     <script define:vars={{ attributes }}>
         function setupDropdown(inputSelector, dropdownSelector, optionsSelector) {
@@ -264,6 +283,63 @@ import '../../styles/global.css';
             handleFiles(files);
         });
 
+        const mediaBottomSheet = document.getElementById('mediaBottomSheet');
+        const mediaBottomSheetContent = document.getElementById('mediaBottomSheetContent');
+        const closeMediaBottomSheetButton = document.getElementById('closeMediaBottomSheet');
+
+        function openMediaBottomSheet() {
+            mediaBottomSheet.classList.remove('translate-y-full');
+        }
+
+        function closeMediaBottomSheet() {
+            mediaBottomSheet.classList.add('translate-y-full');
+        }
+
+        closeMediaBottomSheetButton.addEventListener('click', closeMediaBottomSheet);
+
+        function createMediaBottomSheetItem(file, publicUrl) {
+            const mediaItem = document.createElement('div');
+            mediaItem.className = 'bg-gray-100 p-2 rounded-lg';
+
+            if (file.type.startsWith('image/')) {
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(file);
+                img.className = 'w-full h-32 object-cover rounded-lg mb-2';
+                mediaItem.appendChild(img);
+            } else {
+                const icon = document.createElement('div');
+                icon.className = 'w-full h-32 flex items-center justify-center bg-gray-200 rounded-lg mb-2';
+                icon.textContent = getFileIcon(file.type);
+                mediaItem.appendChild(icon);
+            }
+
+            const fileName = document.createElement('p');
+            fileName.className = 'text-sm truncate';
+            fileName.textContent = file.name;
+            mediaItem.appendChild(fileName);
+
+            const removeButton = document.createElement('button');
+            removeButton.className = 'mt-2 px-3 py-1 bg-red-500 text-white rounded-md text-sm';
+            removeButton.textContent = 'Remove';
+            removeButton.addEventListener('click', () => {
+                // Remove the file from the preview
+                const previewItem = document.querySelector(`.media-item[data-public-url="${publicUrl}"]`);
+                if (previewItem) {
+                    previewItem.remove();
+                }
+                // Remove the item from the bottom sheet
+                mediaItem.remove();
+                // Close the bottom sheet if no items left
+                if (mediaBottomSheetContent.children.length === 0) {
+                    closeMediaBottomSheet();
+                }
+                // TODO: Implement server-side removal of the file
+            });
+            mediaItem.appendChild(removeButton);
+
+            return mediaItem;
+        }
+
         // Update the handleFiles function
         async function handleFiles(files) {
             if (files) {
@@ -272,14 +348,59 @@ import '../../styles/global.css';
                     console.log('Processing file:', file.name, 'Type:', file.type);
 
                     try {
-                        // Create thumbnail preview before uploading
+                        // Create a placeholder for the media item
                         const mediaItem = document.createElement('div');
                         mediaItem.className = 'media-item';
+                        mediaPreview.appendChild(mediaItem);
+
+                        // Show a loading indicator
+                        const loadingIcon = document.createElement('span');
+                        loadingIcon.textContent = '⏳';
+                        mediaItem.appendChild(loadingIcon);
+
+                        // Upload file
+                        const url = `/api/getSignedUrl?fileName=${encodeURIComponent(file.name)}&fileType=${encodeURIComponent(file.type)}`;
+                        console.log('Requesting signed URL:', url);
+                        
+                        const response = await fetch(url);
+                        console.log('Signed URL response status:', response.status);
+                        
+                        if (!response.ok) {
+                            throw new Error(`Failed to get signed URL: ${await response.text()}`);
+                        }
+
+                        const { signedUrl } = await response.json();
+                        console.log('Received signed URL:', signedUrl);
+
+                        // Upload directly to R2
+                        const uploadResponse = await fetch(signedUrl, {
+                            method: 'PUT',
+                            body: file,
+                            headers: {
+                                'Content-Type': file.type
+                            }
+                        });
+
+                        if (!uploadResponse.ok) {
+                            throw new Error('Upload failed');
+                        }
+
+                        // Extract the file name from the signed URL
+                        const fileName = signedUrl.split('/').pop().split('?')[0];
+                        
+                        // Construct the correct public URL
+                        const publicUrl = `https://files2.parai.space/${fileName}`;
+                        console.log('Public URL:', publicUrl);
+
+                        // Remove the loading indicator
+                        mediaItem.innerHTML = '';
+
+                        // Create thumbnail preview after receiving public URL
+                        mediaItem.setAttribute('data-public-url', publicUrl);
 
                         if (file.type.startsWith('image/')) {
                             const img = new Image();
                             img.onload = () => {
-                                URL.revokeObjectURL(img.src); // Clean up the object URL
                                 const canvas = document.createElement('canvas');
                                 const ctx = canvas.getContext('2d');
                                 canvas.width = 32;
@@ -311,37 +432,13 @@ import '../../styles/global.css';
                             mediaItem.appendChild(icon);
                         }
 
-                        mediaPreview.appendChild(mediaItem);
-
-                        // Upload file
-                        const url = `/api/getSignedUrl?fileName=${encodeURIComponent(file.name)}&fileType=${encodeURIComponent(file.type)}`;
-                        console.log('Requesting signed URL:', url);
-                        
-                        const response = await fetch(url);
-                        console.log('Signed URL response status:', response.status);
-                        
-                        if (!response.ok) {
-                            throw new Error(`Failed to get signed URL: ${await response.text()}`);
-                        }
-
-                        const { signedUrl } = await response.json();
-                        console.log('Received signed URL:', signedUrl);
-
-                        // Upload directly to R2
-                        const uploadResponse = await fetch(signedUrl, {
-                            method: 'PUT',
-                            body: file,
-                            headers: {
-                                'Content-Type': file.type
-                            }
+                        // Add click event to open bottom sheet
+                        mediaItem.addEventListener('click', () => {
+                            mediaBottomSheetContent.innerHTML = ''; // Clear previous content
+                            const bottomSheetItem = createMediaBottomSheetItem(file, publicUrl);
+                            mediaBottomSheetContent.appendChild(bottomSheetItem);
+                            openMediaBottomSheet();
                         });
-
-                        if (!uploadResponse.ok) {
-                            throw new Error('Upload failed');
-                        }
-
-                        const publicUrl = signedUrl.split('?')[0]; // Remove query parameters to get the public URL
-                        console.log('Public URL:', publicUrl);
 
                         // You can store the publicUrl or perform any other necessary actions here
 
@@ -1098,6 +1195,32 @@ import '../../styles/global.css';
 
         #instanceSearch:focus {
             box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+        }
+
+        #mediaBottomSheet {
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        #mediaBottomSheetContent {
+            max-height: calc(80vh - 4rem);
+            overflow-y: auto;
+        }
+
+        .media-cell {
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .media-cell:hover {
+            background-color: #f3f4f6;
+        }
+
+        .media-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            min-height: 40px;
         }
     </style>
 
