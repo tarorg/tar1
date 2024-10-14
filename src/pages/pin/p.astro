@@ -264,13 +264,47 @@ import '../../styles/global.css';
             handleFiles(files);
         });
 
-        function handleFiles(files) {
+        // Replace the existing handleFiles function with this new version
+        async function handleFiles(files) {
             if (files) {
                 for (let i = 0; i < files.length; i++) {
                     const file = files[i];
-                    const reader = new FileReader();
+                    console.log('Processing file:', file.name, 'Type:', file.type);
 
-                    reader.onload = (e) => {
+                    try {
+                        const url = `/api/getSignedUrl?fileName=${encodeURIComponent(file.name)}&fileType=${encodeURIComponent(file.type)}`;
+                        console.log('Requesting signed URL:', url);
+                        
+                        const response = await fetch(url);
+                        console.log('Signed URL response status:', response.status);
+                        
+                        const responseText = await response.text();
+                        console.log('Response text:', responseText);
+
+                        if (!response.ok) {
+                            throw new Error(`Failed to get signed URL: ${responseText}`);
+                        }
+
+                        const { signedUrl } = JSON.parse(responseText);
+                        console.log('Received signed URL:', signedUrl);
+
+                        // Upload directly to R2
+                        const uploadResponse = await fetch(signedUrl, {
+                            method: 'PUT',
+                            body: file,
+                            headers: {
+                                'Content-Type': file.type
+                            }
+                        });
+
+                        if (!uploadResponse.ok) {
+                            throw new Error('Upload failed');
+                        }
+
+                        const publicUrl = signedUrl.split('?')[0]; // Remove query parameters to get the public URL
+
+                        console.log('File uploaded:', publicUrl);
+
                         const mediaItem = document.createElement('div');
                         mediaItem.className = 'media-item inline-flex items-center justify-center overflow-hidden';
                         mediaItem.style.width = '32px';
@@ -278,7 +312,7 @@ import '../../styles/global.css';
 
                         if (file.type.startsWith('image/')) {
                             const img = document.createElement('img');
-                            img.src = e.target.result;
+                            img.src = publicUrl;
                             img.alt = file.name;
                             img.className = 'w-full h-full object-cover';
                             mediaItem.appendChild(img);
@@ -290,13 +324,12 @@ import '../../styles/global.css';
                         }
 
                         mediaPreview.appendChild(mediaItem);
-                    };
-
-                    reader.readAsDataURL(file);
+                    } catch (error) {
+                        console.error('Error uploading file:', error);
+                    }
                 }
 
                 console.log(`Medias updated: ${files.length} file(s) added`);
-                // Here you can add code to save the changes, e.g., send to a server
             }
         }
 
