@@ -264,7 +264,7 @@ import '../../styles/global.css';
             handleFiles(files);
         });
 
-        // Replace the existing handleFiles function with this new version
+        // Update the handleFiles function
         async function handleFiles(files) {
             if (files) {
                 for (let i = 0; i < files.length; i++) {
@@ -272,20 +272,59 @@ import '../../styles/global.css';
                     console.log('Processing file:', file.name, 'Type:', file.type);
 
                     try {
+                        // Create thumbnail preview before uploading
+                        const mediaItem = document.createElement('div');
+                        mediaItem.className = 'media-item';
+
+                        if (file.type.startsWith('image/')) {
+                            const img = new Image();
+                            img.onload = () => {
+                                URL.revokeObjectURL(img.src); // Clean up the object URL
+                                const canvas = document.createElement('canvas');
+                                const ctx = canvas.getContext('2d');
+                                canvas.width = 32;
+                                canvas.height = 32;
+                                
+                                // Calculate the size to crop the image to a square
+                                const size = Math.min(img.width, img.height);
+                                const startX = (img.width - size) / 2;
+                                const startY = (img.height - size) / 2;
+                                
+                                // Draw the image as a thumbnail
+                                ctx.drawImage(img, startX, startY, size, size, 0, 0, 32, 32);
+                                
+                                const thumbnailImg = new Image();
+                                thumbnailImg.src = canvas.toDataURL();
+                                thumbnailImg.className = 'w-full h-full object-cover';
+                                mediaItem.appendChild(thumbnailImg);
+                            };
+                            img.onerror = (e) => {
+                                console.error('Failed to load image:', file.name, e);
+                                const fallbackIcon = document.createElement('span');
+                                fallbackIcon.textContent = '🖼️';
+                                mediaItem.appendChild(fallbackIcon);
+                            };
+                            img.src = URL.createObjectURL(file);
+                        } else {
+                            const icon = document.createElement('span');
+                            icon.textContent = getFileIcon(file.type);
+                            mediaItem.appendChild(icon);
+                        }
+
+                        mediaPreview.appendChild(mediaItem);
+
+                        // Upload file
                         const url = `/api/getSignedUrl?fileName=${encodeURIComponent(file.name)}&fileType=${encodeURIComponent(file.type)}`;
                         console.log('Requesting signed URL:', url);
                         
                         const response = await fetch(url);
                         console.log('Signed URL response status:', response.status);
                         
-                        const responseText = await response.text();
-                        console.log('Response text:', responseText);
-
                         if (!response.ok) {
-                            throw new Error(`Failed to get signed URL: ${responseText}`);
+                            throw new Error(`Failed to get signed URL: ${await response.text()}`);
                         }
 
-                        const { signedUrl } = JSON.parse(responseText);
+                        const { signedUrl } = await response.json();
                         console.log('Received signed URL:', signedUrl);
 
                         // Upload directly to R2
@@ -302,37 +341,26 @@ import '../../styles/global.css';
                         }
 
                         const publicUrl = signedUrl.split('?')[0]; // Remove query parameters to get the public URL
+                        console.log('Public URL:', publicUrl);
 
-                        console.log('File uploaded:', publicUrl);
+                        // You can store the publicUrl or perform any other necessary actions here
 
-                        const mediaItem = document.createElement('div');
-                        mediaItem.className = 'media-item inline-flex items-center justify-center overflow-hidden';
-                        mediaItem.style.width = '32px';
-                        mediaItem.style.height = '32px';
-
-                        if (file.type.startsWith('image/')) {
-                            const img = document.createElement('img');
-                            img.src = publicUrl;
-                            img.alt = file.name;
-                            img.className = 'w-full h-full object-cover';
-                            mediaItem.appendChild(img);
-                        } else {
-                            const icon = document.createElement('span');
-                            icon.textContent = getFileIcon(file.type);
-                            icon.className = 'text-xl';
-                            mediaItem.appendChild(icon);
-                        }
-
-                        mediaPreview.appendChild(mediaItem);
                     } catch (error) {
-                        console.error('Error uploading file:', error);
+                        console.error('Error processing file:', file.name, error);
+                        const errorItem = document.createElement('div');
+                        errorItem.className = 'media-item bg-red-100';
+                        const errorIcon = document.createElement('span');
+                        errorIcon.textContent = '❌';
+                        errorItem.appendChild(errorIcon);
+                        mediaPreview.appendChild(errorItem);
                     }
                 }
 
-                console.log(`Medias updated: ${files.length} file(s) added`);
+                console.log(`Medias updated: ${files.length} file(s) processed`);
             }
         }
 
+        // Add this function if it's not already present
         function getFileIcon(fileType) {
             if (fileType.includes('pdf')) return '📄';
             if (fileType.includes('doc')) return '📝';
@@ -997,30 +1025,41 @@ import '../../styles/global.css';
         #coreTable tr:last-child td {
             border-bottom: none;
         }
-    </style>
 
-    <!-- Add the new Notion-like table here -->
-    <div class="mt-8 max-w-4xl mx-auto p-4">
-        <div class="mb-4">
-            <input type="text" id="instanceSearch" class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Search instances...">
-        </div>
-        <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-            <table class="w-full">
-                <thead>
-                    <tr class="bg-gray-50">
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-3/4 border-r border-gray-200">SKU</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">QTY</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200" id="instancesTableBody">
-                    <!-- Rows will be added dynamically -->
-                </tbody>
-            </table>
-        </div>
-    </div>
+        .media-item {
+            width: 32px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background-color: #f3f4f6;
+            margin: 2px;
+            border-radius: 4px;
+        }
 
-    <style>
-        /* ... (previous styles remain unchanged) */
+        .media-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .media-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2px;
+            max-height: 40px; /* Reduced height */
+            overflow-y: auto;
+        }
+
+        .media-cell {
+            height: 44px; /* Slightly larger than max-height of media-preview to account for padding */
+            padding: 2px;
+        }
+
+        .media-item span {
+            font-size: 16px; /* Smaller icon size for non-image files */
+        }
 
         /* Add these new styles for the instances table */
         #instancesTableBody td {
@@ -1061,5 +1100,25 @@ import '../../styles/global.css';
             box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
         }
     </style>
+
+    <!-- Add the new Notion-like table here -->
+    <div class="mt-8 max-w-4xl mx-auto p-4">
+        <div class="mb-4">
+            <input type="text" id="instanceSearch" class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Search instances...">
+        </div>
+        <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+            <table class="w-full">
+                <thead>
+                    <tr class="bg-gray-50">
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-3/4 border-r border-gray-200">SKU</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">QTY</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200" id="instancesTableBody">
+                    <!-- Rows will be added dynamically -->
+                </tbody>
+            </table>
+        </div>
+    </div>
 </body>
 </html>

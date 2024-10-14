@@ -1,6 +1,5 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import crypto from 'crypto';
 
 export async function GET({ request }) {
     console.log('GetSignedUrl endpoint hit');
@@ -18,11 +17,6 @@ export async function GET({ request }) {
                 headers: { 'Content-Type': 'application/json' }
             });
         }
-
-        // Generate a random filename
-        const randomString = crypto.randomBytes(16).toString('hex');
-        const fileExtension = fileName.split('.').pop();
-        const randomFileName = `${randomString}.${fileExtension}`;
 
         console.log('Environment variables:', {
             R2_ACCOUNT_ID: import.meta.env.R2_ACCOUNT_ID,
@@ -42,15 +36,15 @@ export async function GET({ request }) {
 
         const command = new PutObjectCommand({
             Bucket: import.meta.env.R2_BUCKET_NAME,
-            Key: randomFileName,
+            Key: `${Date.now()}-${fileName}`,
             ContentType: fileType
         });
 
-        console.log('Generating signed URL for:', randomFileName);
+        console.log('Generating signed URL');
         const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
         console.log('Signed URL generated:', signedUrl);
 
-        return new Response(JSON.stringify({ signedUrl, fileName: randomFileName }), {
+        return new Response(JSON.stringify({ signedUrl }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' },
         });
