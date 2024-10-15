@@ -123,11 +123,10 @@ import '../../styles/global.css';
     <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
 
-    <!-- Add this HTML for the media bottom sheet just before the closing </body> tag -->
+    <!-- Update this HTML for the media bottom sheet just before the closing </body> tag -->
     <div id="mediaBottomSheet" class="fixed inset-x-0 bottom-0 bg-white shadow-md rounded-t-xl transform translate-y-full transition-transform duration-300 ease-in-out z-50">
         <div class="p-6">
-            <div class="flex items-center justify-between mb-6">
-                <h3 class="text-lg font-semibold text-gray-900">Media Files</h3>
+            <div class="flex items-center justify-end mb-6">
                 <button id="closeMediaBottomSheet" class="text-gray-400 hover:text-gray-500 focus:outline-none">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -139,6 +138,12 @@ import '../../styles/global.css';
             </div>
         </div>
     </div>
+
+    <!-- Update the SVG definition -->
+    <svg id="loadingIconSvg" class="hidden" viewBox="0 0 32 32" width="32" height="32">
+        <circle cx="16" cy="16" r="14" fill="none" stroke="#E5E7EB" stroke-width="4" />
+        <path id="loadingArc" d="M16 2 A14 14 0 0 1 30 16" fill="none" stroke="#9CA3AF" stroke-width="4" stroke-linecap="round" />
+    </svg>
 
     <script define:vars={{ attributes }}>
         function setupDropdown(inputSelector, dropdownSelector, optionsSelector) {
@@ -310,12 +315,17 @@ import '../../styles/global.css';
                 img.style.maxHeight = '300px';
                 mediaItem.appendChild(img);
             } else if (file.type.startsWith('video/')) {
+                const videoContainer = document.createElement('div');
+                videoContainer.className = 'relative w-full rounded-lg mb-4';
+                videoContainer.style.paddingBottom = '56.25%'; // 16:9 aspect ratio
+
                 const video = document.createElement('video');
                 video.src = URL.createObjectURL(file);
-                video.className = 'w-full rounded-lg mb-4';
-                video.style.maxHeight = '300px';
+                video.className = 'absolute top-0 left-0 w-full h-full rounded-lg';
                 video.controls = true;
-                mediaItem.appendChild(video);
+
+                videoContainer.appendChild(video);
+                mediaItem.appendChild(videoContainer);
             } else {
                 const icon = document.createElement('div');
                 icon.className = 'w-full h-32 flex items-center justify-center bg-gray-200 rounded-lg mb-4';
@@ -343,7 +353,8 @@ import '../../styles/global.css';
                     });
 
                     if (!response.ok) {
-                        throw new Error('Failed to delete file from R2');
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Failed to delete file from R2');
                     }
 
                     // Remove the file from the preview
@@ -367,16 +378,17 @@ import '../../styles/global.css';
             return mediaItem;
         }
 
-        // Add this new function to create an uploading icon
+        // Update the createUploadingIcon function
         function createUploadingIcon() {
             const uploadingIcon = document.createElement('div');
-            uploadingIcon.className = 'media-item inline-flex items-center justify-center overflow-hidden bg-gray-200 animate-pulse';
+            uploadingIcon.className = 'media-item inline-flex items-center justify-center overflow-hidden bg-transparent';
             uploadingIcon.style.width = '32px';
             uploadingIcon.style.height = '32px';
             
-            const spinner = document.createElement('div');
-            spinner.className = 'animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500';
-            uploadingIcon.appendChild(spinner);
+            const svg = document.getElementById('loadingIconSvg').cloneNode(true);
+            svg.classList.remove('hidden');
+            svg.classList.add('rotating-circle');
+            uploadingIcon.appendChild(svg);
             
             return uploadingIcon;
         }
@@ -401,7 +413,8 @@ import '../../styles/global.css';
                         console.log('Signed URL response status:', response.status);
                         
                         if (!response.ok) {
-                            throw new Error(`Failed to get signed URL: ${await response.text()}`);
+                            const errorText = await response.text();
+                            throw new Error(`Failed to get signed URL: ${errorText}`);
                         }
 
                         const { signedUrl } = await response.json();
@@ -417,8 +430,10 @@ import '../../styles/global.css';
                         });
 
                         if (!uploadResponse.ok) {
-                            throw new Error('Upload failed');
+                            throw new Error(`Upload failed: ${await uploadResponse.text()}`);
                         }
+
+                        console.log('File uploaded successfully');
 
                         // Extract the file name from the signed URL
                         const fileName = signedUrl.split('/').pop().split('?')[0];
@@ -428,46 +443,8 @@ import '../../styles/global.css';
                         console.log('Public URL:', publicUrl);
 
                         // Create thumbnail preview
-                        const mediaItem = document.createElement('div');
-                        mediaItem.className = 'media-item inline-flex items-center justify-center overflow-hidden';
-                        mediaItem.style.width = '32px';
-                        mediaItem.style.height = '32px';
-                        mediaItem.setAttribute('data-public-url', publicUrl);
-
-                        const reader = new FileReader();
-
-                        reader.onload = (e) => {
-                            if (file.type.startsWith('image/')) {
-                                const img = document.createElement('img');
-                                img.src = e.target.result;
-                                img.alt = file.name;
-                                img.className = 'w-full h-full object-cover';
-                                mediaItem.appendChild(img);
-                            } else if (file.type.startsWith('video/')) {
-                                const videoIcon = document.createElement('span');
-                                videoIcon.textContent = '🎥';
-                                videoIcon.className = 'text-xl';
-                                mediaItem.appendChild(videoIcon);
-                            } else {
-                                const icon = document.createElement('span');
-                                icon.textContent = getFileIcon(file.type);
-                                icon.className = 'text-xl';
-                                mediaItem.appendChild(icon);
-                            }
-
-                            // Replace the uploading icon with the actual media item
-                            mediaPreview.replaceChild(mediaItem, uploadingIcon);
-
-                            // Add click event to open bottom sheet
-                            mediaItem.addEventListener('click', () => {
-                                mediaBottomSheetContent.innerHTML = ''; // Clear previous content
-                                const bottomSheetItem = createMediaBottomSheetItem(file, publicUrl);
-                                mediaBottomSheetContent.appendChild(bottomSheetItem);
-                                openMediaBottomSheet();
-                            });
-                        };
-
-                        reader.readAsDataURL(file);
+                        const mediaItem = createMediaItem(file, publicUrl);
+                        mediaPreview.replaceChild(mediaItem, uploadingIcon);
 
                     } catch (error) {
                         console.error('Error processing file:', file.name, error);
@@ -484,6 +461,57 @@ import '../../styles/global.css';
 
                 console.log(`Medias updated: ${files.length} file(s) processed`);
             }
+        }
+
+        function createMediaItem(file, publicUrl) {
+            const mediaItem = document.createElement('div');
+            mediaItem.className = 'media-item inline-flex items-center justify-center overflow-hidden';
+            mediaItem.style.width = '32px';
+            mediaItem.style.height = '32px';
+            mediaItem.setAttribute('data-public-url', publicUrl);
+
+            if (file.type.startsWith('image/')) {
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(file);
+                img.alt = file.name;
+                img.className = 'w-full h-full object-cover';
+                mediaItem.appendChild(img);
+            } else if (file.type.startsWith('video/')) {
+                const videoIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                videoIcon.setAttribute('viewBox', '0 0 24 24');
+                videoIcon.setAttribute('fill', 'none');
+                videoIcon.setAttribute('stroke', 'currentColor');
+                videoIcon.setAttribute('stroke-width', '2');
+                videoIcon.setAttribute('stroke-linecap', 'round');
+                videoIcon.setAttribute('stroke-linejoin', 'round');
+                videoIcon.classList.add('w-6', 'h-6', 'text-gray-600');
+
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', '12');
+                circle.setAttribute('cy', '12');
+                circle.setAttribute('r', '10');
+                videoIcon.appendChild(circle);
+
+                const playTriangle = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                playTriangle.setAttribute('d', 'M10 8l6 4-6 4V8z');
+                videoIcon.appendChild(playTriangle);
+
+                mediaItem.appendChild(videoIcon);
+            } else {
+                const icon = document.createElement('span');
+                icon.textContent = getFileIcon(file.type);
+                icon.className = 'text-xl';
+                mediaItem.appendChild(icon);
+            }
+
+            mediaItem.addEventListener('click', () => {
+                mediaBottomSheetContent.innerHTML = ''; // Clear previous content
+                const bottomSheetItem = createMediaBottomSheetItem(file, publicUrl);
+                mediaBottomSheetContent.appendChild(bottomSheetItem);
+                openMediaBottomSheet();
+            });
+
+            return mediaItem;
         }
 
         // Update the getFileIcon function
@@ -1230,27 +1258,39 @@ import '../../styles/global.css';
         }
 
         /* Add these new styles */
-        @keyframes pulse {
-            0%, 100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.5;
-            }
-        }
-
-        .animate-pulse {
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-
-        @keyframes spin {
-            to {
+        @keyframes rotate {
+            100% {
                 transform: rotate(360deg);
             }
         }
 
-        .animate-spin {
-            animation: spin 1s linear infinite;
+        @keyframes arcRotate {
+            0% {
+                stroke-dasharray: 0 87.96;
+                stroke-dashoffset: 0;
+            }
+            50% {
+                stroke-dasharray: 54.97 87.96;
+                stroke-dashoffset: -21.99;
+            }
+            100% {
+                stroke-dasharray: 87.96 87.96;
+                stroke-dashoffset: -87.96;
+            }
+        }
+
+        .rotating-circle {
+            animation: rotate 1.5s linear infinite;
+        }
+
+        .rotating-circle #loadingArc {
+            animation: arcRotate 1.5s ease-in-out infinite;
+        }
+
+        /* Ensure the SVG takes up the full space of its container */
+        .rotating-circle svg {
+            width: 100%;
+            height: 100%;
         }
     </style>
 
