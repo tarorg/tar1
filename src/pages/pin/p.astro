@@ -297,6 +297,8 @@ import '../../styles/global.css';
 
         closeMediaBottomSheetButton.addEventListener('click', closeMediaBottomSheet);
 
+        // Update the createMediaBottomSheetItem function
+
         function createMediaBottomSheetItem(file, publicUrl) {
             const mediaItem = document.createElement('div');
             mediaItem.className = 'bg-white p-4 rounded-lg shadow-md';
@@ -305,8 +307,15 @@ import '../../styles/global.css';
                 const img = document.createElement('img');
                 img.src = URL.createObjectURL(file);
                 img.className = 'w-full object-cover rounded-lg mb-4';
-                img.style.maxHeight = '300px'; // Set a max height to prevent overly tall images
+                img.style.maxHeight = '300px';
                 mediaItem.appendChild(img);
+            } else if (file.type.startsWith('video/')) {
+                const video = document.createElement('video');
+                video.src = URL.createObjectURL(file);
+                video.className = 'w-full rounded-lg mb-4';
+                video.style.maxHeight = '300px';
+                video.controls = true;
+                mediaItem.appendChild(video);
             } else {
                 const icon = document.createElement('div');
                 icon.className = 'w-full h-32 flex items-center justify-center bg-gray-200 rounded-lg mb-4';
@@ -358,12 +367,30 @@ import '../../styles/global.css';
             return mediaItem;
         }
 
+        // Add this new function to create an uploading icon
+        function createUploadingIcon() {
+            const uploadingIcon = document.createElement('div');
+            uploadingIcon.className = 'media-item inline-flex items-center justify-center overflow-hidden bg-gray-200 animate-pulse';
+            uploadingIcon.style.width = '32px';
+            uploadingIcon.style.height = '32px';
+            
+            const spinner = document.createElement('div');
+            spinner.className = 'animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500';
+            uploadingIcon.appendChild(spinner);
+            
+            return uploadingIcon;
+        }
+
         // Update the handleFiles function
         async function handleFiles(files) {
             if (files) {
                 for (let i = 0; i < files.length; i++) {
                     const file = files[i];
                     console.log('Processing file:', file.name, 'Type:', file.type);
+
+                    // Create and append the uploading icon
+                    const uploadingIcon = createUploadingIcon();
+                    mediaPreview.appendChild(uploadingIcon);
 
                     try {
                         // Upload file
@@ -416,6 +443,11 @@ import '../../styles/global.css';
                                 img.alt = file.name;
                                 img.className = 'w-full h-full object-cover';
                                 mediaItem.appendChild(img);
+                            } else if (file.type.startsWith('video/')) {
+                                const videoIcon = document.createElement('span');
+                                videoIcon.textContent = '🎥';
+                                videoIcon.className = 'text-xl';
+                                mediaItem.appendChild(videoIcon);
                             } else {
                                 const icon = document.createElement('span');
                                 icon.textContent = getFileIcon(file.type);
@@ -423,7 +455,8 @@ import '../../styles/global.css';
                                 mediaItem.appendChild(icon);
                             }
 
-                            mediaPreview.appendChild(mediaItem);
+                            // Replace the uploading icon with the actual media item
+                            mediaPreview.replaceChild(mediaItem, uploadingIcon);
 
                             // Add click event to open bottom sheet
                             mediaItem.addEventListener('click', () => {
@@ -443,7 +476,9 @@ import '../../styles/global.css';
                         const errorIcon = document.createElement('span');
                         errorIcon.textContent = '❌';
                         errorItem.appendChild(errorIcon);
-                        mediaPreview.appendChild(errorItem);
+                        
+                        // Replace the uploading icon with the error icon
+                        mediaPreview.replaceChild(errorItem, uploadingIcon);
                     }
                 }
 
@@ -451,11 +486,13 @@ import '../../styles/global.css';
             }
         }
 
-        // Add this function if it's not already present
+        // Update the getFileIcon function
+
         function getFileIcon(fileType) {
             if (fileType.includes('pdf')) return '📄';
             if (fileType.includes('doc')) return '📝';
             if (fileType.includes('xls')) return '📊';
+            if (fileType.startsWith('video/')) return '🎥';
             return '📁'; // default icon for other file types
         }
 
@@ -1190,6 +1227,30 @@ import '../../styles/global.css';
             flex-wrap: wrap;
             gap: 4px;
             min-height: 40px;
+        }
+
+        /* Add these new styles */
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .animate-spin {
+            animation: spin 1s linear infinite;
         }
     </style>
 
